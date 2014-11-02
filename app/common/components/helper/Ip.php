@@ -9,7 +9,7 @@
 
 namespace helper;
 
-class IpLib {
+class Ip {
 
     /**
      * Get remote or forwarded address
