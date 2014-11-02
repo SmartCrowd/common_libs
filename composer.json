@@ -1,0 +1,10 @@
+{
+    "name": "smartcrowd/common_libs",
+    "description": "Common libraries for Viewer projects",
+    "homepage": "http://smart-crowd.ru",
+    "minimum-stability": "stable",
+    "license": "proprietary",
+    "require": {
+        "php": "5.5.*"
+    }
+}
