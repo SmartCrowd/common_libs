@@ -61,11 +61,9 @@ abstract class Model {
 
     /**
      * Create instance of model or
-     *
-*@param string|Collection $model name or instance of model
+     * @param string|Collection $model name or instance of model
      * @param null|array $params - [key => values] pairs with model data
-     *
-*@return Collection|\models\Tasks|\models\Themes|\models\Projects|\models\Feeds|\models\Projects\Keys|\models\Projects\Profiles
+     * @return Collection|\models\Tasks|\models\Themes|\models\Projects|\models\Feeds|\models\Projects\Keys|\models\Projects\Profiles
      * @throws \Exception
      */
     public static function getModel($model, $params = null){
