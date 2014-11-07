@@ -29,7 +29,7 @@ class Media
                 CURLOPT_CONNECTTIMEOUT => 10,
                 CURLOPT_FAILONERROR    => 1,
             ]);
-            $result = $curl->exec(true, true);
+            $result = $curl->exec(true);
             if ($result['errno'] === 0) {
                 $img = imagecreatefromstring($result['result']);
                 if (is_resource($img)) {
@@ -45,5 +45,28 @@ class Media
             $size = @getimagesize($url);
 
         return $size;
+    }
+
+    public static function getRemoteFileSize($url)
+    {
+        $options = [
+            CURLOPT_NOBODY => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 10
+        ];
+        $result = RequestManager::init($url)->setOptions($options)->exec(true);
+        if ($result['http_code'] === 200 && $result['errno'] === 0) {
+            if (preg_match("/Content-Length: (\d+)/", $result['result'], $matches)) {
+                $content_length = (int)$matches[1];
+                return $content_length;
+            }
+            CDI()->devLog->log('Bad content-length, url: ' . $url, 'notice');
+            return 0;
+        }
+        CDI()->devLog->log('Error occurred during getting content-length of remote image: ' . $result['error'] . ' url: ' . $url, 'notice');
+        return 0;
     }
 }

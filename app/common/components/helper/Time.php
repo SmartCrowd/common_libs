@@ -139,4 +139,20 @@ abstract class Time {
         return mktime($hour, 0, 0);
     }
 
+
+    /**
+     * Returns timestamp depends on hours
+     * if current timestamp greater than today's date+hours returns current timestamp
+     * else returns yesterday's timestamp
+     * @param string $hours hours format H:i:s
+     *
+     * @return int
+     */
+    public static function getInfoDateFromHours($hours)
+    {
+        $time = strtotime(date('Y-m-d').' '.(string)$hours);
+        if ($time <= time()) return time();
+        else return time()-24*60*60;
+    }
+
 }
