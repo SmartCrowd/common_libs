@@ -73,5 +73,14 @@ class ClientResolver {
 
         return $clientName;
     }
+    
+    /**
+     * Generate URL to Viewer_web client
+     * @param bool $toApi
+     * @return string
+     */
+    public function getViewerUrl($toApi = true){
+        return "http://" . str_replace('grandviewer', 'viewer', CDI()->config->client->url) . ($toApi ? "/api" : '');
+    }
 
 } 
