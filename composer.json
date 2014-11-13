@@ -9,5 +9,10 @@
         "php": "5.5.*",
         "ext-curl" : "*",
         "ext-json" : "*"
+    },
+    "autoload": {
+        "psr-0": {
+            "common_libs": "app/"
+        }
     }
 }
