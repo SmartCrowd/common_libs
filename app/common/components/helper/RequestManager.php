@@ -31,8 +31,13 @@ class RequestManager
      */
     public function setOptions(array $options)
     {
-        if (!isset($options[CURLOPT_RETURNTRANSFER])) {
-            $options[CURLOPT_RETURNTRANSFER] = true;
+        $default = [
+            CURLOPT_RETURNTRANSFER => 1,    // to return data in "result" field
+            CURLOPT_FRESH_CONNECT  => 0     // to use cached channels
+        ];
+        foreach($default as $key => $value){
+            if (!isset($options[$key]))
+                $options[$key] = $value;
         }
         curl_setopt_array($this->ch, $options);
         return $this;
@@ -47,11 +52,14 @@ class RequestManager
     public function exec($proxy = false, $rus = false)
     {
         if ($proxy) {
-            $lang = !$rus ? 'en' : 'ru';
+            $lang = !$rus ? 'eu' : 'ru';
             $proxies = self::getProxyList($lang);
             if (count($proxies)) {
-                $proxy = $proxies[array_rand($proxies)];
+                $proxy = $proxies[mt_rand(0, count($proxies) - 1)];
                 curl_setopt($this->ch, CURLOPT_PROXY, $proxy);
+
+                if (strstr($proxy, 'socks5'))
+                    curl_setopt($this->ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
             }
         }
         $res = curl_exec($this->ch);
@@ -63,7 +71,11 @@ class RequestManager
         return $content;
     }
 
-    protected static function getProxyList($lang = 'en')
+    /**
+     * @param string $lang - available: [eu, ru]
+     * @return array
+     */
+    public static function getProxyList($lang = 'eu')
     {
         if (($proxies = CDI()->cache->getCache('proxyList', $lang)) !== false) {
             return $proxies;
@@ -73,6 +85,12 @@ class RequestManager
         return $proxies;
     }
 
+    /**
+     * Load proxy from file
+     * @param string $filename
+     * @param string $delimiter
+     * @return array
+     */
     protected static function loadFromFile($filename, $delimiter = "\n")
     {
         $fp = @fopen($filename, "r");
@@ -90,19 +108,25 @@ class RequestManager
             return array();
         }
 
-        $array = explode($delimiter, $data);
-
-        if (is_array($array) && count($array) > 0) {
-            foreach($array as $k => $v)
-            {
-                if (strlen( trim($v) ) > 0)
-                    $array[$k] = trim($v);
+        $proxy = explode($delimiter, trim($data));
+        foreach($proxy as $k => $v){
+            if (strstr($v, ';') || strstr($v, '#')){
+                unset($proxy[$k]);
             }
-            return $array;
-        } else {
-            CDI()->devLog->log("(!) Empty data array in file: $filename");
-            return array();
         }
+
+        return $proxy;
+    }
+
+    /**
+     * Checks if curl error code matches codes to restart operation
+     * @param int $error
+     * @return bool
+     */
+    public static function restartCheck($error)
+    {
+        $errors_match = [CURLE_COULDNT_RESOLVE_PROXY, CURLE_OPERATION_TIMEOUTED, CURLE_COULDNT_RESOLVE_HOST, CURLE_COULDNT_CONNECT];
+        return (isset($error) && in_array((int)$error, $errors_match));
     }
 
 }
