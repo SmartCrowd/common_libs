@@ -8,7 +8,7 @@
 
 namespace helper;
 
-use models\Feeds;
+use \models\Feeds;
 
 abstract class Coder {
 
