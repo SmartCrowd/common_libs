@@ -237,4 +237,13 @@ abstract class Model {
         return $gluedDocs;
     }
 
+    /**
+     * @param $id
+     * @return \MongoId
+     */
+    public static function restoreMongoId($id)
+    {
+        return isset($id['$id']) ? new \MongoId($id['$id']) : $id;
+    }
+
 } 
