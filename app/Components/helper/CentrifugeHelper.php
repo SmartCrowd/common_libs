@@ -1,15 +1,30 @@
 <?php
 /**
-* Short product info
-*
-* @author :  komrakov
-* @date   :  10.10.14 10:11
-*/
+ * Short product info
+ *
+ * @author :  komrakov
+ * @date   :  10.10.14 10:11
+ */
 
 namespace helper;
 
 
 class CentrifugeHelper {
+
+    /**
+     * Wrapper on forcePublish method. Auto-determines current client for channel name
+     * @param string $channel
+     * @param array  $data
+     *
+     * @return mixed
+     */
+    public static function clientPublish($channel, $data = [])
+    {
+        $channel = CDI()->clientResolver->getClient() . ":" . $channel;
+        $result  = self::forcePublish($channel, $data);
+
+        return $result;
+    }
 
     /**
      * Wrapper on cent->publish method. Creates namespace on "namespace not found" error

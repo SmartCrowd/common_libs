@@ -20,7 +20,7 @@ class RequestManager
     public static function init($apiUrl)
     {
         $inst = new self();
-        $inst->ch = curl_init($apiUrl);
+        $inst->ch = curl_init( self::encodeUrl($apiUrl) );
         return $inst;
     }
 
@@ -127,6 +127,21 @@ class RequestManager
     {
         $errors_match = [CURLE_COULDNT_RESOLVE_PROXY, CURLE_OPERATION_TIMEOUTED, CURLE_COULDNT_RESOLVE_HOST, CURLE_COULDNT_CONNECT];
         return (isset($error) && in_array((int)$error, $errors_match));
+    }
+
+    /**
+     * Function to convert Cyrillic domains in international symbols (default encoding utf-8)
+     * @param $link
+     * @return mixed
+     */
+    public static function encodeUrl($link)
+    {
+        if (!class_exists('\idna_convert'))
+            include_once("idna_convert.class.php");
+
+        $converter = new \idna_convert();
+        $domain = parse_url($link, PHP_URL_HOST);
+        return str_replace($domain, $converter->encode($domain), $link);
     }
 
 }

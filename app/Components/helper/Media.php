@@ -23,12 +23,12 @@ class Media
         if (extension_loaded('gd') && function_exists('imagecreatefromstring')) {
             $curl = RequestManager::init($url);
             $curl->setOptions([
-                CURLOPT_FOLLOWLOCATION => 1,
-                CURLOPT_RETURNTRANSFER => 1,
-                CURLOPT_TIMEOUT        => 10,
-                CURLOPT_CONNECTTIMEOUT => 10,
-                CURLOPT_FAILONERROR    => 1,
-            ]);
+                    CURLOPT_FOLLOWLOCATION => 1,
+                    CURLOPT_RETURNTRANSFER => 1,
+                    CURLOPT_TIMEOUT        => 10,
+                    CURLOPT_CONNECTTIMEOUT => 10,
+                    CURLOPT_FAILONERROR    => 1,
+                ]);
             $result = $curl->exec(true);
             if ($result['errno'] === 0) {
                 $img = imagecreatefromstring($result['result']);
@@ -55,11 +55,20 @@ class Media
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT => 10,
-            CURLOPT_CONNECTTIMEOUT => 10
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Encoding:gzip,deflate,sdch',
+                'Accept-Language:ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4',
+                'Cache-Control:no-cache',
+                'Connection:keep-alive',
+                'Pragma:no-cache',
+                'User-Agent:Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36',
+            ]
         ];
         $result = RequestManager::init($url)->setOptions($options)->exec(true);
         if ($result['http_code'] === 200 && $result['errno'] === 0) {
-            if (preg_match("/Content-Length: (\d+)/", $result['result'], $matches)) {
+            if (preg_match('/Content-Length: (\d+)/', $result['result'], $matches)) {
                 $content_length = (int)$matches[1];
                 return $content_length;
             }
@@ -85,8 +94,10 @@ class Media
         preg_match_all( '/<img.*src=[\'\"](.*)[\'\"]/U', $html, $result_img );
         preg_match_all( '/<iframe.*src=[\'\"](.*)[\'\"]/U', $html, $result_video );
         foreach(array_pop($result_img) as $image){
+            $image = html_entity_decode($image);
             $ext = pathinfo($image, PATHINFO_EXTENSION);
             $ext = explode('?', $ext)[0];
+            $ext = explode('&', $ext)[0];
             if (in_array(strtolower($ext), ['jpg', 'gif', 'png', 'jpeg'])){
                 if (self::getRemoteFileSize($image) > 3500)
                     $album['album'][] = $image;
@@ -103,4 +114,5 @@ class Media
         }
         return $album;
     }
+
 }

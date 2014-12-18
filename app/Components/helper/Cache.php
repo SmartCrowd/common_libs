@@ -1,6 +1,6 @@
 <?php
 /**
- * abstract class working with redis cache
+ * Class working with redis cache
  *
  * @author : nikolaev
  * @date : 8/26/14 3:25 PM
@@ -27,12 +27,15 @@ class Cache
     }
 
     /**
-     * gets cache by key and arguments
+     * Gets cache by key and arguments
+     *
      * @param string $set
      * @param string $key used in hash fields
+     * @param bool   $unserialize
+     *
      * @return bool|mixed
      */
-    public function getCache($set, $key)
+    public function getCache($set, $key, $unserialize = true)
     {
         if (!$set) return false;
         if (!is_string($key))
@@ -41,7 +44,8 @@ class Cache
         $set = strtolower($this->set_prefix . $set);
         try {
             if ($this->redis->hExists($set, $key)) {
-                return unserialize($this->redis->hGet($set, $key));
+                $value = $this->redis->hGet($set, $key);
+                return ($unserialize) ? unserialize($value) : $value;
             } else {
                 return false;
             }
