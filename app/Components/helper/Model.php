@@ -243,7 +243,7 @@ abstract class Model {
      */
     public static function restoreMongoId($id)
     {
-        return isset($id['$id']) ? new \MongoId($id['$id']) : $id;
+        return (is_array($id) && isset($id['$id'])) ? new \MongoId($id['$id']) : $id;
     }
 
 } 
