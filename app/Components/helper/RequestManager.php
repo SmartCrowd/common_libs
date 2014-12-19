@@ -45,22 +45,16 @@ class RequestManager
 
     /**
      * Performs curl request with proxy or not
-     * @param bool $proxy true if it needed to use proxy
+     * @param bool $useProxy true if it needed to use proxy
      * @param bool $rus true if it needed to use proxy based on russian server
      * @return mixed
      */
-    public function exec($proxy = false, $rus = false)
+    public function exec($useProxy = false, $rus = false)
     {
-        if ($proxy) {
-            $lang = !$rus ? 'eu' : 'ru';
-            $proxies = self::getProxyList($lang);
-            if (count($proxies)) {
-                $proxy = $proxies[mt_rand(0, count($proxies) - 1)];
-                curl_setopt($this->ch, CURLOPT_PROXY, $proxy);
-
-                if (strstr($proxy, 'socks5'))
-                    curl_setopt($this->ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
-            }
+        if ($useProxy && $proxy = self::getProxy($rus)) {
+            curl_setopt($this->ch, CURLOPT_PROXY, $proxy);
+            if (strstr($proxy, 'socks5'))
+                curl_setopt($this->ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
         }
         $res = curl_exec($this->ch);
         $content = curl_getinfo($this->ch);
@@ -144,4 +138,23 @@ class RequestManager
         return str_replace($domain, $converter->encode($domain), $link);
     }
 
+    /**
+     * gets a single proxy string
+     * @param bool $rus
+     * @return array
+     */
+    public static function getProxy($rus = false)
+    {
+        $lang = !$rus ? 'eu' : 'ru';
+        $proxy = '';
+        $proxies = self::getProxyList($lang);
+        if (count($proxies)) {
+            $proxy = $proxies[mt_rand(0, count($proxies) - 1)];
+        }
+        return $proxy;
+    }
+
 }
+
+
+
