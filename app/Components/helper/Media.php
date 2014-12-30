@@ -98,6 +98,7 @@ class Media
             $ext = pathinfo($image, PATHINFO_EXTENSION);
             $ext = explode('?', $ext)[0];
             $ext = explode('&', $ext)[0];
+            $ext = explode('%', $ext)[0];
             if (in_array(strtolower($ext), ['jpg', 'gif', 'png', 'jpeg'])){
                 if (self::getRemoteFileSize($image) > 3500)
                     $album['album'][] = $image;
