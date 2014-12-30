@@ -49,14 +49,36 @@ class Media
 
     public static function getRemoteFileSize($url)
     {
+        $result = self::getImageHeaders($url);
+
+        if ($result === false) {
+            CDI()->devLog->log('Error occurred during getting content-length of remote image: ' . $result['error'] . ' url: ' . $url, 'notice');
+            return false;
+        }
+
+        if (preg_match('/Content-Length: (\d+)/', $result['result'], $matches)) {
+            $content_length = (int)$matches[1];
+            return $content_length;
+        }
+
+        CDI()->devLog->log('Bad content-length, url: ' . $url, 'notice');
+
+        return false;
+    }
+
+
+    public static function getImageHeaders($url)
+    {
+        $url = html_entity_decode($url);
+
         $options = [
-            CURLOPT_NOBODY => true,
-            CURLOPT_HEADER => true,
+            CURLOPT_NOBODY         => true,
+            CURLOPT_HEADER         => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 10,
+            CURLOPT_TIMEOUT        => 10,
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_HTTPHEADER     => [
                 'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Encoding:gzip,deflate,sdch',
                 'Accept-Language:ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4',
@@ -66,17 +88,35 @@ class Media
                 'User-Agent:Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36',
             ]
         ];
-        $result = RequestManager::init($url)->setOptions($options)->exec(true);
-        if ($result['http_code'] === 200 && $result['errno'] === 0) {
-            if (preg_match('/Content-Length: (\d+)/', $result['result'], $matches)) {
-                $content_length = (int)$matches[1];
-                return $content_length;
-            }
-            CDI()->devLog->log('Bad content-length, url: ' . $url, 'notice');
-            return 0;
-        }
-        CDI()->devLog->log('Error occurred during getting content-length of remote image: ' . $result['error'] . ' url: ' . $url, 'notice');
-        return 0;
+        $result = RequestManager::init($url)->setOptions($options)->exec();
+
+        return ($result['http_code'] === 200 && $result['errno'] === 0) ? $result : false;
+    }
+
+    public static function getContentLength($headers)
+    {
+        return isset($headers['download_content_length']) ? $headers['download_content_length'] : 0;
+    }
+
+    public static function getContentType($headers)
+    {
+        return isset($headers['content_type']) ? $headers['content_type'] : "";
+    }
+
+    public static function checkImageType($headers)
+    {
+        $content_type    = self::getContentType($headers);
+        $available_types = ['image/gif', 'image/jpeg', 'image/png'];
+
+        return in_array($content_type, $available_types);
+    }
+
+    public static function checkImageSize($headers)
+    {
+        $content_length = self::getContentLength($headers);
+        $minimal_length = 3500;
+
+        return $content_length > $minimal_length;
     }
 
     /**
@@ -94,14 +134,9 @@ class Media
         preg_match_all( '/<img.*src=[\'\"](.*)[\'\"]/U', $html, $result_img );
         preg_match_all( '/<iframe.*src=[\'\"](.*)[\'\"]/U', $html, $result_video );
         foreach(array_pop($result_img) as $image){
-            $image = html_entity_decode($image);
-            $ext = pathinfo($image, PATHINFO_EXTENSION);
-            $ext = explode('?', $ext)[0];
-            $ext = explode('&', $ext)[0];
-            $ext = explode('%', $ext)[0];
-            if (in_array(strtolower($ext), ['jpg', 'gif', 'png', 'jpeg'])){
-                if (self::getRemoteFileSize($image) > 3500)
-                    $album['album'][] = $image;
+            $headers = self::getImageHeaders($image);
+            if (self::checkImageType($headers) && self::checkImageSize($headers)) {
+                $album['album'][] = $image;
             }
         }
         foreach(array_pop($result_video) as $video){
