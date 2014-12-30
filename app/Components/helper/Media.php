@@ -69,8 +69,6 @@ class Media
 
     public static function getImageHeaders($url)
     {
-        $url = html_entity_decode($url);
-
         $options = [
             CURLOPT_NOBODY         => true,
             CURLOPT_HEADER         => true,
@@ -134,6 +132,7 @@ class Media
         preg_match_all( '/<img.*src=[\'\"](.*)[\'\"]/U', $html, $result_img );
         preg_match_all( '/<iframe.*src=[\'\"](.*)[\'\"]/U', $html, $result_video );
         foreach(array_pop($result_img) as $image){
+            $image = html_entity_decode($image);
             $headers = self::getImageHeaders($image);
             if (self::checkImageType($headers) && self::checkImageSize($headers)) {
                 $album['album'][] = $image;
