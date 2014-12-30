@@ -32,12 +32,7 @@ class RedisCache {
         $this->redis->connect($host, $port);
 
         // test for server available
-        try{
-            $this->redis->ping();
-        }catch (\Exception $e){
-            CDI()->devLog->log('not connect redis'. $e->getMessage());
-        }
-
+        $this->redis->ping();
 
         //Create a Data frontend and set a default lifetime to 1 hour
         $frontend = new Data(['lifetime' => $lifetime]);

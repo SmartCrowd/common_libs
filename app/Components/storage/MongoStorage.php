@@ -16,32 +16,27 @@ class MongoStorage {
 
     public function __construct(){
 
-        try {
-            $stage  = ConfigHelper::getStageStatus();
-            $config = CDI()->config->mongo->$stage;
-            $host   = $config->host;
-            $port   = $config->port;
+        $stage  = ConfigHelper::getStageStatus();
+        $config = CDI()->config->mongo->$stage;
+        $host   = $config->host;
+        $port   = $config->port;
 
-            if ($stage === 'default'){
-                $this->connection = new \MongoClient($this->getConnectionString($host, $port));
+        if ($stage === 'default'){
+            $this->connection = new \MongoClient($this->getConnectionString($host, $port));
+        } else {
+            $nodes   = isset($config->nodes) ? $config->nodes : null;
+            $replica = null;
+
+            if (isset($config->replicaName) && !empty($config->replicaName))
+                $replica = $config->replicaName;
+
+            if ($nodes && $replica) {
+                $this->connection = new \MongoClient(
+                    $this->getConnectionString($host, $port, $nodes), ["replicaSet" => $replica]
+                );
             } else {
-                $nodes   = isset($config->nodes) ? $config->nodes : null;
-                $replica = null;
-
-                if (isset($config->replicaName) && !empty($config->replicaName))
-                    $replica = $config->replicaName;
-
-                if ($nodes && $replica) {
-                    $this->connection = new \MongoClient(
-                        $this->getConnectionString($host, $port, $nodes), ["replicaSet" => $replica]
-                    );
-                } else {
-                    $this->connection = new \MongoClient($this->getConnectionString($host, $port));
-                }
+                $this->connection = new \MongoClient($this->getConnectionString($host, $port));
             }
-
-        } catch(\MongoConnectionException $e ){
-            CDI()->devLog->log('Unable to connect to Mongo :: ' . $e->getMessage(), 'error');
         }
     }
 
