@@ -250,7 +250,7 @@ class Cache
      *
      * @return bool
      */
-    public function setEx($key, $value, $lifetime = null)
+    public function setEx($key, $value = "", $lifetime = null)
     {
         try {
             $key = $this->setPrefix($key);
@@ -267,19 +267,15 @@ class Cache
     /**
      * Set key to hold string value if key does not exist. When key already holds a value, no operation is performed.
      * @param string $key
-     * @param int    $lifetime
      * @param string $value
      *
      * @return bool True if the key was set. False if the key was not set
      */
-    public function setNx($key, $value, $lifetime = null)
+    public function setNx($key, $value = "")
     {
         $key = $this->setPrefix($key);
-        if (is_null($lifetime)) {
-            $lifetime = self::$lifetime;
-        }
 
-        return $this->redis->setnx($key, $lifetime, $value);
+        return $this->redis->setnx($key, $value);
     }
 
     public static function setPrefix($key)
@@ -321,6 +317,23 @@ class Cache
     public static function unpack($data)
     {
         return unserialize($data);
+    }
+
+    /**
+     * Sets an expiration date (a timeout) on an item.
+     * @param string $key
+     * @param int    $lifetime
+     *
+     * @return bool
+     */
+    public function expire($key, $lifetime)
+    {
+        try {
+            $key = $this->setPrefix($key);
+            return $this->redis->expire($key, $lifetime);
+        } catch(\Exception $e){
+            return false;
+        }
     }
 
 }
