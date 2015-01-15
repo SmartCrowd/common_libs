@@ -16,13 +16,17 @@ class Cache
 {
 
     private static $lifetime = 86400;
-    private $set_prefix;
+    private static $set_prefix = "";
+
+    /**
+     * @var \Redis()
+     */
     private $redis;
 
     public function __construct()
     {
         $client = CDI()->clientResolver->getClient();
-        $this->set_prefix = (empty($client)) ? "" : $client."_";
+        self::$set_prefix = empty($client) ? "" : $client."_";
         $this->redis = CDI()->redis->getInstance();
     }
 
@@ -41,7 +45,7 @@ class Cache
         if (!is_string($key))
             return false;
 
-        $set = strtolower($this->set_prefix . $set);
+        $set = $this->setPrefix($set);
         try {
             if ($this->redis->hExists($set, $key)) {
                 $value = $this->redis->hGet($set, $key);
@@ -65,7 +69,7 @@ class Cache
     public function getAllCache($set, $unserialize = true)
     {
         try {
-            $set = strtolower($this->set_prefix . $set);
+            $set = $this->setPrefix($set);
             $result = $this->redis->hGetAll($set);
             if ($unserialize) {
                 foreach ($result as $k => $val) {
@@ -96,7 +100,7 @@ class Cache
         if (is_null($lifetime))
             $lifetime = self::$lifetime;
 
-        $set = strtolower($this->set_prefix . $set);
+        $set = $this->setPrefix($set);
         $value = serialize($value);
 
         try {
@@ -119,7 +123,7 @@ class Cache
     public function deleteCache($set, $key=null)
     {
         try {
-            $set = strtolower($this->set_prefix . $set);
+            $set = $this->setPrefix($set);
             if (is_null($key))
                 return $this->redis->del($set);
 
@@ -143,7 +147,7 @@ class Cache
     public function keyExists($set, $key)
     {
         try{
-            $set = strtolower($this->set_prefix . $set);
+            $set = $this->setPrefix($set);
             return $this->redis->hExists($set, $key);
         }
         catch(\Exception $e){
@@ -161,8 +165,7 @@ class Cache
     public function increment($set, $key = null)
     {
         try {
-            $set = strtolower($this->set_prefix . $set);
-
+            $set = $this->setPrefix($set);
             return is_null($key) ? $this->redis->incr($set) : $this->redis->hIncrBy($set, $key, 1);
         } catch (\Exception $e) {
             return false;
@@ -178,7 +181,7 @@ class Cache
     public function expireAt($key, $timestamp)
     {
         try{
-            $key = strtolower($this->set_prefix . $key);
+            $key = $this->setPrefix($key);
             return $this->redis->expireAt($key, $timestamp);
         } catch(\Exception $e){
             return false;
@@ -193,7 +196,7 @@ class Cache
     public function getKey($key)
     {
         try{
-            $key = strtolower($this->set_prefix . $key);
+            $key = $this->setPrefix($key);
             return $this->redis->get($key);
         } catch(\Exception $e){
             return false;
@@ -210,7 +213,7 @@ class Cache
     public function lPush($key, $value)
     {
         try{
-            $key = strtolower($this->set_prefix . $key);
+            $key = $this->setPrefix($key);
             $value = serialize($value);
             return $this->redis->lPush($key, $value);
         } catch(\Exception $e){
@@ -227,8 +230,8 @@ class Cache
      */
     public function getRange($key, $start, $stop)
     {
-        try{
-            $key = strtolower($this->set_prefix . $key);
+        try {
+            $key = $this->setPrefix($key);
             $result = $this->redis->lRange($key, $start, $stop);
             foreach ($result as $key => $val) {
                 $result[$key] = unserialize($val);
@@ -237,6 +240,50 @@ class Cache
         } catch(\Exception $e){
             return false;
         }
+    }
+
+    /**
+     * @param string $key
+     * @param int    $lifetime
+     * @param string $value
+     *
+     * @return bool
+     */
+    public function setEx($key, $value, $lifetime = null)
+    {
+        try {
+            $key = $this->setPrefix($key);
+            if (is_null($lifetime)) {
+                $lifetime = self::$lifetime;
+            }
+
+            return $this->redis->setex($key, $lifetime, $value);
+        } catch(\Exception $e){
+            return false;
+        }
+    }
+
+    public static function setPrefix($key)
+    {
+        return strtolower(self::$set_prefix . $key);
+    }
+
+    /**
+     * Returns unique string for any type of argument
+     * From: https://github.com/yiisoft/yii2/blob/master/framework/caching/Cache.php
+     * @param mixed $key
+     *
+     * @return string
+     */
+    public static function buildKey($key)
+    {
+        if (is_string($key)) {
+            $key = ctype_alnum($key) && mb_strlen($key, '8bit') <= 32 ? $key : md5($key);
+        } else {
+            $key = md5(json_encode($key));
+        }
+
+        return $key;
     }
 
 }
