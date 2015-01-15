@@ -35,11 +35,11 @@ class Cache
      *
      * @param string $set
      * @param string $key used in hash fields
-     * @param bool   $unserialize
+     * @param bool   $unpack
      *
      * @return bool|mixed
      */
-    public function getCache($set, $key, $unserialize = true)
+    public function getCache($set, $key, $unpack = true)
     {
         if (!$set) return false;
         if (!is_string($key))
@@ -49,7 +49,7 @@ class Cache
         try {
             if ($this->redis->hExists($set, $key)) {
                 $value = $this->redis->hGet($set, $key);
-                return ($unserialize) ? unserialize($value) : $value;
+                return ($unpack) ? self::unpack($value) : $value;
             } else {
                 return false;
             }
@@ -62,18 +62,18 @@ class Cache
 
     /**
      * @param string $set
-     * @param bool   $unserialize
+     * @param bool   $unpack
      *
      * @return array | false
      */
-    public function getAllCache($set, $unserialize = true)
+    public function getAllCache($set, $unpack = true)
     {
         try {
             $set = $this->setPrefix($set);
             $result = $this->redis->hGetAll($set);
-            if ($unserialize) {
+            if ($unpack) {
                 foreach ($result as $k => $val) {
-                    $result[$k] = unserialize($val);
+                    $result[$k] = self::unpack($val);
                 }
             }
             return $result;
@@ -101,7 +101,7 @@ class Cache
             $lifetime = self::$lifetime;
 
         $set = $this->setPrefix($set);
-        $value = serialize($value);
+        $value = self::pack($value);
 
         try {
             $result = $this->redis->hSet($set, $key, $value);
@@ -214,7 +214,7 @@ class Cache
     {
         try{
             $key = $this->setPrefix($key);
-            $value = serialize($value);
+            $value = self::pack($value);
             return $this->redis->lPush($key, $value);
         } catch(\Exception $e){
             return false;
@@ -234,7 +234,7 @@ class Cache
             $key = $this->setPrefix($key);
             $result = $this->redis->lRange($key, $start, $stop);
             foreach ($result as $key => $val) {
-                $result[$key] = unserialize($val);
+                $result[$key] = self::unpack($val);
             }
             return $result;
         } catch(\Exception $e){
@@ -243,6 +243,7 @@ class Cache
     }
 
     /**
+     * Set key to hold the string value and set key to timeout after a given number of seconds
      * @param string $key
      * @param int    $lifetime
      * @param string $value
@@ -261,6 +262,24 @@ class Cache
         } catch(\Exception $e){
             return false;
         }
+    }
+
+    /**
+     * Set key to hold string value if key does not exist. When key already holds a value, no operation is performed.
+     * @param string $key
+     * @param int    $lifetime
+     * @param string $value
+     *
+     * @return bool True if the key was set. False if the key was not set
+     */
+    public function setNx($key, $value, $lifetime = null)
+    {
+        $key = $this->setPrefix($key);
+        if (is_null($lifetime)) {
+            $lifetime = self::$lifetime;
+        }
+
+        return $this->redis->setnx($key, $lifetime, $value);
     }
 
     public static function setPrefix($key)
@@ -284,6 +303,24 @@ class Cache
         }
 
         return $key;
+    }
+
+    /**
+     * @param mixed $data
+     * @return string
+     */
+    public static function pack($data)
+    {
+        return serialize($data);
+    }
+
+    /**
+     * @param string $data
+     * @return mixed
+     */
+    public static function unpack($data)
+    {
+        return unserialize($data);
     }
 
 }
