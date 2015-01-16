@@ -15,38 +15,38 @@ namespace helper;
 class Cache
 {
 
-    private static $lifetime = 86400;
-    private static $set_prefix = "";
+    private static $lifetime = 86400; // 24*60*60
+    private static $prefix   = "";
 
     /**
      * @var \Redis()
      */
     private $redis;
 
-    public function __construct()
+    /**
+     * @param \Redis $redis
+     * @param string $prefix
+     */
+    public function __construct(\Redis $redis, $prefix = "")
     {
-        $client = CDI()->clientResolver->getClient();
-        self::$set_prefix = empty($client) ? "" : $client."_";
-        $this->redis = CDI()->redis->getInstance();
+        $this->redis  = $redis;
+        self::$prefix = $prefix;
     }
 
     /**
      * Gets cache by key and arguments
      *
      * @param string $set
-     * @param string $key used in hash fields
+     * @param string $key
      * @param bool   $unpack
      *
      * @return bool|mixed
      */
     public function getCache($set, $key, $unpack = true)
     {
-        if (!$set) return false;
-        if (!is_string($key))
-            return false;
-
-        $set = $this->setPrefix($set);
         try {
+            $set = $this->setPrefix($set);
+
             if ($this->redis->hExists($set, $key)) {
                 $value = $this->redis->hGet($set, $key);
                 return ($unpack) ? self::unpack($value) : $value;
@@ -54,8 +54,6 @@ class Cache
 
             return false;
         } catch (\Exception $e) {
-            CDI()->devLog->log('Hash get in redis failed with message: '.$e->getMessage().
-                "\n".$e->getTraceAsString(), 'error');
             return false;
         }
     }
@@ -69,17 +67,16 @@ class Cache
     public function getAllCache($set, $unpack = true)
     {
         try {
-            $set = $this->setPrefix($set);
+            $set    = $this->setPrefix($set);
             $result = $this->redis->hGetAll($set);
             if ($unpack) {
                 foreach ($result as $k => $val) {
                     $result[$k] = self::unpack($val);
                 }
             }
+
             return $result;
         } catch (\Exception $e) {
-            CDI()->devLog->log('GetAllCache failed in \helper\Cache with message: '.$e->getMessage().
-                "\n".$e->getTraceAsString(), 'error');
             return false;
         }
     }
@@ -96,14 +93,12 @@ class Cache
      */
     public function setCache($set, $key, $value)
     {
-        $set   = $this->setPrefix($set);
-        $value = self::pack($value);
-
         try {
+            $set   = $this->setPrefix($set);
+            $value = self::pack($value);
+
             return $this->redis->hSet($set, $key, $value);
         } catch (\Exception $e) {
-            CDI()->devLog->log('Hash set in redis failed with message: '.$e->getMessage().
-                "\n".$e->getTraceAsString(), 'error');
             return false;
         }
     }
@@ -123,8 +118,6 @@ class Cache
 
             return is_null($key) ? $this->redis->del($set) : $this->redis->hDel($set, $key);
         } catch (\Exception $e) {
-            CDI()->devLog->log('Hash delete in redis failed with message: '.$e->getMessage().
-                "\n".$e->getTraceAsString(), 'error');
             return false;
         }
     }
@@ -137,14 +130,14 @@ class Cache
      */
     public function keyExists($set, $key)
     {
-        try{
+        try {
             $set = $this->setPrefix($set);
+
             return $this->redis->hExists($set, $key);
         }
-        catch(\Exception $e){
+        catch(\Exception $e) {
             return false;
         }
-
     }
 
     /**
@@ -157,6 +150,7 @@ class Cache
     {
         try {
             $set = $this->setPrefix($set);
+
             return is_null($key) ? $this->redis->incr($set) : $this->redis->hIncrBy($set, $key, 1);
         } catch (\Exception $e) {
             return false;
@@ -172,8 +166,9 @@ class Cache
     {
         try {
             $key = $this->setPrefix($key);
+
             return $this->redis->get($key);
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
     }
@@ -186,11 +181,12 @@ class Cache
      */
     public function lPush($key, $value)
     {
-        try{
+        try {
             $key = $this->setPrefix($key);
             $value = self::pack($value);
+
             return $this->redis->lPush($key, $value);
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
     }
@@ -210,8 +206,9 @@ class Cache
             foreach ($result as $key => $val) {
                 $result[$key] = self::unpack($val);
             }
+
             return $result;
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
     }
@@ -234,7 +231,7 @@ class Cache
             }
 
             return $this->redis->setex($key, $lifetime, $value);
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
     }
@@ -266,8 +263,9 @@ class Cache
     {
         try {
             $key = $this->setPrefix($key);
+
             return $this->redis->expire($key, $lifetime);
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
     }
@@ -280,17 +278,18 @@ class Cache
      */
     public function expireAt($key, $timestamp)
     {
-        try{
+        try {
             $key = $this->setPrefix($key);
+
             return $this->redis->expireAt($key, $timestamp);
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
     }
 
-    public static function setPrefix($key)
+    public static function setPrefix($string)
     {
-        return strtolower(self::$set_prefix . $key);
+        return strtolower(self::$prefix . $string);
     }
 
     /**
@@ -324,7 +323,7 @@ class Cache
 
     /**
      * @param string $data
-     * 
+     *
      * @return mixed
      */
     public static function unpack($data)
