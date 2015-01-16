@@ -36,19 +36,19 @@ class Cache
     /**
      * Gets cache by key and arguments
      *
-     * @param string $set
      * @param string $key
+     * @param string $hashKey
      * @param bool   $unpack
      *
      * @return bool|mixed
      */
-    public function getCache($set, $key, $unpack = true)
+    public function getCache($key, $hashKey, $unpack = true)
     {
         try {
-            $set = $this->setPrefix($set);
+            $key = $this->setPrefix($key);
 
-            if ($this->redis->hExists($set, $key)) {
-                $value = $this->redis->hGet($set, $key);
+            if ($this->redis->hExists($key, $hashKey)) {
+                $value = $this->redis->hGet($key, $hashKey);
                 return ($unpack) ? self::unpack($value) : $value;
             }
 
@@ -59,16 +59,16 @@ class Cache
     }
 
     /**
-     * @param string $set
+     * @param string $key
      * @param bool   $unpack
      *
      * @return array|false
      */
-    public function getAllCache($set, $unpack = true)
+    public function getAllCache($key, $unpack = true)
     {
         try {
-            $set    = $this->setPrefix($set);
-            $result = $this->redis->hGetAll($set);
+            $key    = $this->setPrefix($key);
+            $result = $this->redis->hGetAll($key);
             if ($unpack) {
                 foreach ($result as $k => $val) {
                     $result[$k] = self::unpack($val);
@@ -85,19 +85,19 @@ class Cache
     /**
      * Sets cache by key and arguments
      *
-     * @param string $set
      * @param string $key
-     * @param mixed $value caching data
+     * @param string $hashKey
+     * @param mixed  $value caching data
      *
      * @return bool
      */
-    public function setCache($set, $key, $value)
+    public function setCache($key, $hashKey, $value)
     {
         try {
-            $set   = $this->setPrefix($set);
+            $key   = $this->setPrefix($key);
             $value = self::pack($value);
 
-            return $this->redis->hSet($set, $key, $value);
+            return $this->redis->hSet($key, $hashKey, $value);
         } catch (\Exception $e) {
             return false;
         }
@@ -106,34 +106,34 @@ class Cache
     /**
      * Deletes cache by key or only one field in key
      *
-     * @param string $set
      * @param string $key
+     * @param string $hashKey
      *
      * @return int|false
      */
-    public function deleteCache($set, $key=null)
+    public function deleteCache($key, $hashKey = null)
     {
         try {
-            $set = $this->setPrefix($set);
+            $key = $this->setPrefix($key);
 
-            return is_null($key) ? $this->redis->del($set) : $this->redis->hDel($set, $key);
+            return is_null($hashKey) ? $this->redis->del($key) : $this->redis->hDel($key, $hashKey);
         } catch (\Exception $e) {
             return false;
         }
     }
 
     /**
-     * @param string $set
      * @param string $key
+     * @param string $hashKey
      *
      * @return bool If key exists in set, return TRUE, otherwise return FALSE.
      */
-    public function keyExists($set, $key)
+    public function keyExists($key, $hashKey)
     {
         try {
-            $set = $this->setPrefix($set);
+            $key = $this->setPrefix($key);
 
-            return $this->redis->hExists($set, $key);
+            return $this->redis->hExists($key, $hashKey);
         }
         catch(\Exception $e) {
             return false;
@@ -141,17 +141,17 @@ class Cache
     }
 
     /**
-     * @param string $set
      * @param string $key
+     * @param string $hashKey
      *
      * @return int Value after incrementation
      */
-    public function increment($set, $key = null)
+    public function increment($key, $hashKey = null)
     {
         try {
-            $set = $this->setPrefix($set);
+            $key = $this->setPrefix($key);
 
-            return is_null($key) ? $this->redis->incr($set) : $this->redis->hIncrBy($set, $key, 1);
+            return is_null($hashKey) ? $this->redis->incr($key) : $this->redis->hIncrBy($key, $hashKey, 1);
         } catch (\Exception $e) {
             return false;
         }
@@ -175,7 +175,7 @@ class Cache
 
     /**
      * @param string $key
-     * @param mixed  $value
+     * @param string $value
      *
      * @return bool|int The new length of the list or false
      */
@@ -183,7 +183,6 @@ class Cache
     {
         try {
             $key = $this->setPrefix($key);
-            $value = self::pack($value);
 
             return $this->redis->lPush($key, $value);
         } catch(\Exception $e) {
@@ -203,9 +202,6 @@ class Cache
         try {
             $key = $this->setPrefix($key);
             $result = $this->redis->lRange($key, $start, $end);
-            foreach ($result as $key => $val) {
-                $result[$key] = self::unpack($val);
-            }
 
             return $result;
         } catch(\Exception $e) {
