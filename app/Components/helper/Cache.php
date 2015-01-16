@@ -50,9 +50,9 @@ class Cache
             if ($this->redis->hExists($set, $key)) {
                 $value = $this->redis->hGet($set, $key);
                 return ($unpack) ? self::unpack($value) : $value;
-            } else {
-                return false;
             }
+
+            return false;
         } catch (\Exception $e) {
             CDI()->devLog->log('Hash get in redis failed with message: '.$e->getMessage().
                 "\n".$e->getTraceAsString(), 'error');
@@ -64,7 +64,7 @@ class Cache
      * @param string $set
      * @param bool   $unpack
      *
-     * @return array | false
+     * @return array|false
      */
     public function getAllCache($set, $unpack = true)
     {
@@ -86,27 +86,21 @@ class Cache
 
 
     /**
-     * sets cache by key and arguments
+     * Sets cache by key and arguments
+     *
      * @param string $set
      * @param string $key
      * @param mixed $value caching data
-     * @param null $lifetime lifetime of cache
+     *
      * @return bool
      */
-    public function setCache($set, $key, $value, $lifetime=null)
+    public function setCache($set, $key, $value)
     {
-        if (!is_string($key))
-            return false;
-        if (is_null($lifetime))
-            $lifetime = self::$lifetime;
-
-        $set = $this->setPrefix($set);
+        $set   = $this->setPrefix($set);
         $value = self::pack($value);
 
         try {
-            $result = $this->redis->hSet($set, $key, $value);
-            $this->redis->expire($set, $lifetime);
-            return $result;
+            return $this->redis->hSet($set, $key, $value);
         } catch (\Exception $e) {
             CDI()->devLog->log('Hash set in redis failed with message: '.$e->getMessage().
                 "\n".$e->getTraceAsString(), 'error');
@@ -115,22 +109,19 @@ class Cache
     }
 
     /**
-     * deletes cache by key or only one field in key
+     * Deletes cache by key or only one field in key
+     *
      * @param string $set
      * @param string $key
+     *
      * @return int|false
      */
     public function deleteCache($set, $key=null)
     {
         try {
             $set = $this->setPrefix($set);
-            if (is_null($key))
-                return $this->redis->del($set);
 
-            if (is_string($key))
-                return $this->redis->hDel($set, $key);
-
-            return false;
+            return is_null($key) ? $this->redis->del($set) : $this->redis->hDel($set, $key);
         } catch (\Exception $e) {
             CDI()->devLog->log('Hash delete in redis failed with message: '.$e->getMessage().
                 "\n".$e->getTraceAsString(), 'error');
@@ -139,8 +130,8 @@ class Cache
     }
 
     /**
-     * @param $set string
-     * @param $key string
+     * @param string $set
+     * @param string $key
      *
      * @return bool If key exists in set, return TRUE, otherwise return FALSE.
      */
@@ -160,7 +151,7 @@ class Cache
      * @param string $set
      * @param string $key
      *
-     * @return int value after incrementation
+     * @return int Value after incrementation
      */
     public function increment($set, $key = null)
     {
@@ -173,40 +164,23 @@ class Cache
     }
 
     /**
-     * @param $key string
-     * @param $timestamp int
-     *
-     * @return bool
-     */
-    public function expireAt($key, $timestamp)
-    {
-        try{
-            $key = $this->setPrefix($key);
-            return $this->redis->expireAt($key, $timestamp);
-        } catch(\Exception $e){
-            return false;
-        }
-    }
-
-    /**
-     * @param $key string
+     * @param string $key
      *
      * @return bool|string
      */
     public function getKey($key)
     {
-        try{
+        try {
             $key = $this->setPrefix($key);
             return $this->redis->get($key);
         } catch(\Exception $e){
             return false;
         }
-
     }
 
     /**
-     * @param $key string
-     * @param $value mixed
+     * @param string $key
+     * @param mixed  $value
      *
      * @return bool|int The new length of the list or false
      */
@@ -222,17 +196,17 @@ class Cache
     }
 
     /**
-     * @param $key string
-     * @param $start int
-     * @param $stop int
+     * @param string $key
+     * @param int    $start
+     * @param int    $end
      *
      * @return array|bool
      */
-    public function getRange($key, $start, $stop)
+    public function getRange($key, $start, $end)
     {
         try {
             $key = $this->setPrefix($key);
-            $result = $this->redis->lRange($key, $start, $stop);
+            $result = $this->redis->lRange($key, $start, $end);
             foreach ($result as $key => $val) {
                 $result[$key] = self::unpack($val);
             }
@@ -244,6 +218,7 @@ class Cache
 
     /**
      * Set key to hold the string value and set key to timeout after a given number of seconds
+     *
      * @param string $key
      * @param int    $lifetime
      * @param string $value
@@ -266,6 +241,7 @@ class Cache
 
     /**
      * Set key to hold string value if key does not exist. When key already holds a value, no operation is performed.
+     *
      * @param string $key
      * @param string $value
      *
@@ -278,6 +254,40 @@ class Cache
         return $this->redis->setnx($key, $value);
     }
 
+    /**
+     * Sets an expiration date (a timeout) on an item.
+     *
+     * @param string $key
+     * @param int    $lifetime
+     *
+     * @return bool
+     */
+    public function expire($key, $lifetime)
+    {
+        try {
+            $key = $this->setPrefix($key);
+            return $this->redis->expire($key, $lifetime);
+        } catch(\Exception $e){
+            return false;
+        }
+    }
+
+    /**
+     * @param string $key
+     * @param int    $timestamp
+     *
+     * @return bool
+     */
+    public function expireAt($key, $timestamp)
+    {
+        try{
+            $key = $this->setPrefix($key);
+            return $this->redis->expireAt($key, $timestamp);
+        } catch(\Exception $e){
+            return false;
+        }
+    }
+
     public static function setPrefix($key)
     {
         return strtolower(self::$set_prefix . $key);
@@ -286,6 +296,7 @@ class Cache
     /**
      * Returns unique string for any type of argument
      * From: https://github.com/yiisoft/yii2/blob/master/framework/caching/Cache.php
+     *
      * @param mixed $key
      *
      * @return string
@@ -303,6 +314,7 @@ class Cache
 
     /**
      * @param mixed $data
+     *
      * @return string
      */
     public static function pack($data)
@@ -312,28 +324,12 @@ class Cache
 
     /**
      * @param string $data
+     * 
      * @return mixed
      */
     public static function unpack($data)
     {
         return unserialize($data);
-    }
-
-    /**
-     * Sets an expiration date (a timeout) on an item.
-     * @param string $key
-     * @param int    $lifetime
-     *
-     * @return bool
-     */
-    public function expire($key, $lifetime)
-    {
-        try {
-            $key = $this->setPrefix($key);
-            return $this->redis->expire($key, $lifetime);
-        } catch(\Exception $e){
-            return false;
-        }
     }
 
 }
