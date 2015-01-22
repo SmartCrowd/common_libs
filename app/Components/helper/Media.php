@@ -23,12 +23,12 @@ class Media
         if (extension_loaded('gd') && function_exists('imagecreatefromstring')) {
             $curl = RequestManager::init($url);
             $curl->setOptions([
-                    CURLOPT_FOLLOWLOCATION => 1,
-                    CURLOPT_RETURNTRANSFER => 1,
-                    CURLOPT_TIMEOUT        => 10,
-                    CURLOPT_CONNECTTIMEOUT => 10,
-                    CURLOPT_FAILONERROR    => 1,
-                ]);
+                CURLOPT_FOLLOWLOCATION => 1,
+                CURLOPT_RETURNTRANSFER => 1,
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_FAILONERROR    => 1,
+            ]);
             $result = $curl->exec(true);
             if ($result['errno'] === 0) {
                 $img = imagecreatefromstring($result['result']);
@@ -50,14 +50,14 @@ class Media
     public static function getRemoteFileSize($url)
     {
         $result = self::getImageHeaders($url);
-
         if ($result === false) {
             CDI()->devLog->log('Error occurred during getting content-length of remote image: ' . $result['error'] . ' url: ' . $url, 'notice');
             return false;
         }
 
-        if (preg_match('/Content-Length: (\d+)/', $result['result'], $matches)) {
-            $content_length = (int)$matches[1];
+        if (preg_match_all('/Content-Length: (\d+)/', $result['result'], $matches)) {
+            $last_match = array_pop($matches);
+            $content_length = (int)array_pop($last_match);
             return $content_length;
         }
 
@@ -87,7 +87,6 @@ class Media
             ]
         ];
         $result = RequestManager::init($url)->setOptions($options)->exec();
-
         return ($result['http_code'] === 200 && $result['errno'] === 0) ? $result : false;
     }
 
@@ -98,7 +97,10 @@ class Media
 
     public static function getContentType($headers)
     {
-        return isset($headers['content_type']) ? $headers['content_type'] : "";
+        if (isset($headers['content_type']) && preg_match('/(.+)(;|$)/U',$headers['content_type'],$match) ){
+            return $match[1];
+        }
+        return "";
     }
 
     public static function checkImageType($headers)
