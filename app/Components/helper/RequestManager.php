@@ -158,6 +158,10 @@ class RequestManager
         return $proxy;
     }
 
+    /**
+     * sets random user agent string to options array
+     * @return $this
+     */
     public function setRandomUserAgent()
     {
         $user_agents = self::getUserAgentsList();
@@ -169,6 +173,10 @@ class RequestManager
         return $this;
     }
 
+    /**
+     * gets list of user_agents from file or from cache
+     * @return array|mixed
+     */
     public static function getUserAgentsList()
     {
         if (($agents = CDI()->cache->getKey('userAgentsList')) !== false) {
