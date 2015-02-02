@@ -11,6 +11,7 @@ namespace helper;
 class RequestManager
 {
     private $ch;
+    private $options = [];
 
     /**
      * initializes new curl session and returns RequestManager object
@@ -39,7 +40,7 @@ class RequestManager
             if (!isset($options[$key]))
                 $options[$key] = $value;
         }
-        curl_setopt_array($this->ch, $options);
+        $this->options = $options;
         return $this;
     }
 
@@ -51,6 +52,7 @@ class RequestManager
      */
     public function exec($useProxy = false, $rus = false)
     {
+        curl_setopt_array($this->ch, $this->options);
         if ($useProxy && $proxy = self::getProxy($rus)) {
             curl_setopt($this->ch, CURLOPT_PROXY, $proxy);
             if (strstr($proxy, 'socks5'))
@@ -104,7 +106,7 @@ class RequestManager
 
         $proxy = explode($delimiter, trim($data));
         foreach($proxy as $k => $v){
-            if (strstr($v, ';') || strstr($v, '#')){
+            if (strpos($v, ';') === 0 || strpos($v, '#') === 0){
                 unset($proxy[$k]);
             }
         }
@@ -152,6 +154,27 @@ class RequestManager
             $proxy = $proxies[mt_rand(0, count($proxies) - 1)];
         }
         return $proxy;
+    }
+
+    public function setRandomUserAgent()
+    {
+        $user_agents = self::getUserAgentsList();
+        if (count($user_agents)) {
+            $agent = $user_agents[mt_rand(0, count($user_agents) - 1)];
+        }
+        curl_setopt($this->ch, CURLOPT_USERAGENT, $agent);
+        $this->options[CURLOPT_USERAGENT] = $agent;
+        return $this;
+    }
+
+    public static function getUserAgentsList()
+    {
+        if (($agents = CDI()->cache->getKey('userAgentsList')) !== false) {
+            return Cache::unpack($agents);
+        }
+        $agents = self::loadFromFile(ROOT_PATH.'/private/user_agent_list.txt');
+        CDI()->cache->setKey('userAgentsList', Cache::pack($agents));
+        return $agents;
     }
 
 }
