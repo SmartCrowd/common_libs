@@ -52,7 +52,9 @@ class RequestManager
      */
     public function exec($useProxy = false, $rus = false)
     {
-        curl_setopt_array($this->ch, $this->options);
+        if (!empty($this->options)) {
+            curl_setopt_array($this->ch, $this->options);
+        }
         if ($useProxy && $proxy = self::getProxy($rus)) {
             curl_setopt($this->ch, CURLOPT_PROXY, $proxy);
             if (strstr($proxy, 'socks5'))
