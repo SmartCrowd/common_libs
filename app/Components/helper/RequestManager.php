@@ -11,7 +11,7 @@ namespace helper;
 class RequestManager
 {
     private $ch;
-    private $options = [];
+    private $options = []; //for debug
 
     /**
      * initializes new curl session and returns RequestManager object
@@ -40,6 +40,7 @@ class RequestManager
             if (!isset($options[$key]))
                 $options[$key] = $value;
         }
+        curl_setopt_array($this->ch, $options);
         $this->options = $options;
         return $this;
     }
@@ -52,13 +53,13 @@ class RequestManager
      */
     public function exec($useProxy = false, $rus = false)
     {
-        if (!empty($this->options)) {
-            curl_setopt_array($this->ch, $this->options);
-        }
         if ($useProxy && $proxy = self::getProxy($rus)) {
             curl_setopt($this->ch, CURLOPT_PROXY, $proxy);
-            if (strstr($proxy, 'socks5'))
+            $this->options[CURLOPT_PROXY] = $proxy;
+            if (strstr($proxy, 'socks5')) {
                 curl_setopt($this->ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+                $this->options[CURLOPT_PROXYTYPE] = CURLPROXY_SOCKS5;
+            }
         }
         $res = curl_exec($this->ch);
         $content = curl_getinfo($this->ch);
