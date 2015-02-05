@@ -15,228 +15,316 @@ namespace helper;
 class Cache
 {
 
-    private static $lifetime = 86400;
-    private $set_prefix;
+    private static $lifetime = 86400; // 24*60*60
+    private static $prefix   = "";
+
+    /**
+     * @var \Redis()
+     */
     private $redis;
 
-    public function __construct()
+    /**
+     * @param \Redis $redis
+     * @param string $prefix
+     */
+    public function __construct(\Redis $redis, $prefix = "")
     {
-        $client = CDI()->clientResolver->getClient();
-        $this->set_prefix = (empty($client)) ? "" : $client."_";
-        $this->redis = CDI()->redis->getInstance();
+        $this->redis  = $redis;
+        self::$prefix = $prefix;
     }
 
     /**
      * Gets cache by key and arguments
      *
-     * @param string $set
-     * @param string $key used in hash fields
-     * @param bool   $unserialize
+     * @param string $key
+     * @param string $hashKey
+     * @param bool   $unpack
      *
      * @return bool|mixed
      */
-    public function getCache($set, $key, $unserialize = true)
+    public function getCache($key, $hashKey, $unpack = true)
     {
-        if (!$set) return false;
-        if (!is_string($key))
-            return false;
-
-        $set = strtolower($this->set_prefix . $set);
         try {
-            if ($this->redis->hExists($set, $key)) {
-                $value = $this->redis->hGet($set, $key);
-                return ($unserialize) ? unserialize($value) : $value;
-            } else {
-                return false;
+            $key = $this->setPrefix($key);
+
+            if ($this->redis->hExists($key, $hashKey)) {
+                $value = $this->redis->hGet($key, $hashKey);
+                return ($unpack) ? self::unpack($value) : $value;
             }
+
+            return false;
         } catch (\Exception $e) {
-            CDI()->devLog->log('Hash get in redis failed with message: '.$e->getMessage().
-                "\n".$e->getTraceAsString(), 'error');
             return false;
         }
     }
 
     /**
-     * @param string $set
-     * @param bool   $unserialize
+     * @param string $key
+     * @param bool   $unpack
      *
-     * @return array | false
+     * @return array|false
      */
-    public function getAllCache($set, $unserialize = true)
+    public function getAllCache($key, $unpack = true)
     {
         try {
-            $set = strtolower($this->set_prefix . $set);
-            $result = $this->redis->hGetAll($set);
-            if ($unserialize) {
+            $key    = $this->setPrefix($key);
+            $result = $this->redis->hGetAll($key);
+            if ($unpack) {
                 foreach ($result as $k => $val) {
-                    $result[$k] = unserialize($val);
+                    $result[$k] = self::unpack($val);
                 }
             }
+
             return $result;
         } catch (\Exception $e) {
-            CDI()->devLog->log('GetAllCache failed in \helper\Cache with message: '.$e->getMessage().
-                "\n".$e->getTraceAsString(), 'error');
             return false;
         }
     }
 
 
     /**
-     * sets cache by key and arguments
-     * @param string $set
+     * Sets cache by key and arguments
+     *
      * @param string $key
-     * @param mixed $value caching data
-     * @param null $lifetime lifetime of cache
+     * @param string $hashKey
+     * @param mixed  $value caching data
+     *
      * @return bool
      */
-    public function setCache($set, $key, $value, $lifetime=null)
+    public function setCache($key, $hashKey, $value)
     {
-        if (!is_string($key))
-            return false;
-        if (is_null($lifetime))
-            $lifetime = self::$lifetime;
-
-        $set = strtolower($this->set_prefix . $set);
-        $value = serialize($value);
-
         try {
-            $result = $this->redis->hSet($set, $key, $value);
-            $this->redis->expire($set, $lifetime);
-            return $result;
+            $key   = $this->setPrefix($key);
+            $value = self::pack($value);
+
+            return $this->redis->hSet($key, $hashKey, $value);
         } catch (\Exception $e) {
-            CDI()->devLog->log('Hash set in redis failed with message: '.$e->getMessage().
-                "\n".$e->getTraceAsString(), 'error');
             return false;
         }
     }
 
     /**
-     * deletes cache by key or only one field in key
-     * @param string $set
+     * Deletes cache by key or only one field in key
+     *
      * @param string $key
+     * @param string $hashKey
+     *
      * @return int|false
      */
-    public function deleteCache($set, $key=null)
+    public function deleteCache($key, $hashKey = null)
     {
         try {
-            $set = strtolower($this->set_prefix . $set);
-            if (is_null($key))
-                return $this->redis->del($set);
+            $key = $this->setPrefix($key);
 
-            if (is_string($key))
-                return $this->redis->hDel($set, $key);
-
-            return false;
+            return is_null($hashKey) ? $this->redis->del($key) : $this->redis->hDel($key, $hashKey);
         } catch (\Exception $e) {
-            CDI()->devLog->log('Hash delete in redis failed with message: '.$e->getMessage().
-                "\n".$e->getTraceAsString(), 'error');
             return false;
         }
     }
 
     /**
-     * @param $set string
-     * @param $key string
+     * @param string $key
+     * @param string $hashKey
      *
      * @return bool If key exists in set, return TRUE, otherwise return FALSE.
      */
-    public function keyExists($set, $key)
+    public function keyExists($key, $hashKey)
     {
-        try{
-            $set = strtolower($this->set_prefix . $set);
-            return $this->redis->hExists($set, $key);
+        try {
+            $key = $this->setPrefix($key);
+
+            return $this->redis->hExists($key, $hashKey);
         }
-        catch(\Exception $e){
+        catch(\Exception $e) {
             return false;
         }
-
     }
 
     /**
-     * @param string $set
      * @param string $key
+     * @param string $hashKey
      *
-     * @return int value after incrementation
+     * @return int Value after incrementation
      */
-    public function increment($set, $key = null)
+    public function increment($key, $hashKey = null)
     {
         try {
-            $set = strtolower($this->set_prefix . $set);
+            $key = $this->setPrefix($key);
 
-            return is_null($key) ? $this->redis->incr($set) : $this->redis->hIncrBy($set, $key, 1);
+            return is_null($hashKey) ? $this->redis->incr($key) : $this->redis->hIncrBy($key, $hashKey, 1);
         } catch (\Exception $e) {
             return false;
         }
     }
 
     /**
-     * @param $key string
-     * @param $timestamp int
-     *
-     * @return bool
-     */
-    public function expireAt($key, $timestamp)
-    {
-        try{
-            $key = strtolower($this->set_prefix . $key);
-            return $this->redis->expireAt($key, $timestamp);
-        } catch(\Exception $e){
-            return false;
-        }
-    }
-
-    /**
-     * @param $key string
+     * @param string $key
      *
      * @return bool|string
      */
     public function getKey($key)
     {
-        try{
-            $key = strtolower($this->set_prefix . $key);
+        try {
+            $key = $this->setPrefix($key);
+
             return $this->redis->get($key);
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
-
     }
 
     /**
-     * @param $key string
-     * @param $value mixed
+     * @param string $key
+     * @param string $value
      *
      * @return bool|int The new length of the list or false
      */
     public function lPush($key, $value)
     {
-        try{
-            $key = strtolower($this->set_prefix . $key);
-            $value = serialize($value);
+        try {
+            $key = $this->setPrefix($key);
+
             return $this->redis->lPush($key, $value);
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
     }
 
     /**
-     * @param $key string
-     * @param $start int
-     * @param $stop int
+     * @param string $key
+     * @param int    $start
+     * @param int    $end
      *
      * @return array|bool
      */
-    public function getRange($key, $start, $stop)
+    public function getRange($key, $start, $end)
     {
-        try{
-            $key = strtolower($this->set_prefix . $key);
-            $result = $this->redis->lRange($key, $start, $stop);
-            foreach ($result as $key => $val) {
-                $result[$key] = unserialize($val);
-            }
+        try {
+            $key = $this->setPrefix($key);
+            $result = $this->redis->lRange($key, $start, $end);
+
             return $result;
-        } catch(\Exception $e){
+        } catch(\Exception $e) {
             return false;
         }
+    }
+
+    /**
+     * Set key to hold the string value and set key to timeout after a given number of seconds
+     *
+     * @param string $key
+     * @param int    $lifetime
+     * @param string $value
+     *
+     * @return bool
+     */
+    public function setEx($key, $value = "", $lifetime = null)
+    {
+        try {
+            $key = $this->setPrefix($key);
+            if (is_null($lifetime)) {
+                $lifetime = self::$lifetime;
+            }
+
+            return $this->redis->setex($key, $lifetime, $value);
+        } catch(\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Set key to hold string value if key does not exist. When key already holds a value, no operation is performed.
+     *
+     * @param string $key
+     * @param string $value
+     *
+     * @return bool True if the key was set. False if the key was not set
+     */
+    public function setNx($key, $value = "")
+    {
+        $key = $this->setPrefix($key);
+
+        return $this->redis->setnx($key, $value);
+    }
+
+    /**
+     * Sets an expiration date (a timeout) on an item.
+     *
+     * @param string $key
+     * @param int    $lifetime
+     *
+     * @return bool
+     */
+    public function expire($key, $lifetime)
+    {
+        try {
+            $key = $this->setPrefix($key);
+
+            return $this->redis->expire($key, $lifetime);
+        } catch(\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * @param string $key
+     * @param int    $timestamp
+     *
+     * @return bool
+     */
+    public function expireAt($key, $timestamp)
+    {
+        try {
+            $key = $this->setPrefix($key);
+
+            return $this->redis->expireAt($key, $timestamp);
+        } catch(\Exception $e) {
+            return false;
+        }
+    }
+
+    public static function setPrefix($string)
+    {
+        return strtolower(self::$prefix . $string);
+    }
+
+    /**
+     * Returns unique string for any type of argument
+     * From: https://github.com/yiisoft/yii2/blob/master/framework/caching/Cache.php
+     *
+     * @param mixed $key
+     *
+     * @return string
+     */
+    public static function buildKey($key)
+    {
+        if (is_string($key)) {
+            $key = ctype_alnum($key) && mb_strlen($key, '8bit') <= 32 ? $key : md5($key);
+        } else {
+            $key = md5(json_encode($key));
+        }
+
+        return $key;
+    }
+
+    /**
+     * @param mixed $data
+     *
+     * @return string
+     */
+    public static function pack($data)
+    {
+        return serialize($data);
+    }
+
+    /**
+     * @param string $data
+     *
+     * @return mixed
+     */
+    public static function unpack($data)
+    {
+        return unserialize($data);
     }
 
 }
