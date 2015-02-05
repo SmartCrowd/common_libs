@@ -11,6 +11,7 @@ namespace helper;
 class RequestManager
 {
     private $ch;
+    private $options = []; //for debug
 
     /**
      * initializes new curl session and returns RequestManager object
@@ -40,6 +41,7 @@ class RequestManager
                 $options[$key] = $value;
         }
         curl_setopt_array($this->ch, $options);
+        $this->options = $options;
         return $this;
     }
 
@@ -53,8 +55,11 @@ class RequestManager
     {
         if ($useProxy && $proxy = self::getProxy($rus)) {
             curl_setopt($this->ch, CURLOPT_PROXY, $proxy);
-            if (strstr($proxy, 'socks5'))
+            $this->options[CURLOPT_PROXY] = $proxy;
+            if (strstr($proxy, 'socks5')) {
                 curl_setopt($this->ch, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+                $this->options[CURLOPT_PROXYTYPE] = CURLPROXY_SOCKS5;
+            }
         }
         $res = curl_exec($this->ch);
         $content = curl_getinfo($this->ch);
@@ -104,7 +109,7 @@ class RequestManager
 
         $proxy = explode($delimiter, trim($data));
         foreach($proxy as $k => $v){
-            if (strstr($v, ';') || strstr($v, '#')){
+            if (strpos($v, ';') === 0 || strpos($v, '#') === 0){
                 unset($proxy[$k]);
             }
         }
@@ -152,6 +157,35 @@ class RequestManager
             $proxy = $proxies[mt_rand(0, count($proxies) - 1)];
         }
         return $proxy;
+    }
+
+    /**
+     * sets random user agent string to options array
+     * @return $this
+     */
+    public function setRandomUserAgent()
+    {
+        $user_agents = self::getUserAgentsList();
+        if (count($user_agents)) {
+            $agent = $user_agents[mt_rand(0, count($user_agents) - 1)];
+        }
+        curl_setopt($this->ch, CURLOPT_USERAGENT, $agent);
+        $this->options[CURLOPT_USERAGENT] = $agent;
+        return $this;
+    }
+
+    /**
+     * gets list of user_agents from file or from cache
+     * @return array|mixed
+     */
+    public static function getUserAgentsList()
+    {
+        if (($agents = CDI()->cache->getKey('userAgentsList')) !== false) {
+            return Cache::unpack($agents);
+        }
+        $agents = self::loadFromFile(ROOT_PATH.'/private/user_agent_list.txt');
+        CDI()->cache->setKey('userAgentsList', Cache::pack($agents));
+        return $agents;
     }
 
 }
