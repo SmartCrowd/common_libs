@@ -53,7 +53,14 @@ abstract class Model {
     private static function sanitizeNamespace($className)
     {
         if (strpos(ltrim($className, '\\'), self::$defaultNamespace) !== 0){
-            $className = self::$defaultNamespace . ucfirst($className);
+            $className = explode('\\', ltrim($className, '\\'));
+            for($i = 0, $max = count($className); $i < $max; $i++){
+                if ($i == $max - 1)
+                    $className[$i] = ucfirst($className[$i]);
+                else
+                    $className[$i] = strtolower($className[$i]);
+            }
+            $className = self::$defaultNamespace . implode('\\', $className);
         }
 
         return $className;
@@ -63,7 +70,7 @@ abstract class Model {
      * Create instance of model or
      * @param string|Collection $model name or instance of model
      * @param null|array $params - [key => values] pairs with model data
-     * @return Collection|\models\Tasks|\models\Themes|\models\Projects|\models\Feeds|\models\Projects\Keys|\models\Projects\Profiles
+     * @return Collection|\models\Tasks|\models\Themes|\models\Projects|\models\Feeds|\models\projects\Keys|\models\projects\Profiles
      * @throws \Exception
      */
     public static function getModel($model, $params = null){
