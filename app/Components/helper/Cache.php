@@ -175,6 +175,22 @@ class Cache
 
     /**
      * @param string $key
+     * @param mixed $value
+     * @return bool|string
+     */
+    public function setKey($key, $value)
+    {
+        try {
+            $key = $this->setPrefix($key);
+
+            return $this->redis->set($key, $value);
+        } catch(\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * @param string $key
      * @param string $value
      *
      * @return bool|int The new length of the list or false
