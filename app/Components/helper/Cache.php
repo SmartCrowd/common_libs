@@ -123,17 +123,24 @@ class Cache
     }
 
     /**
+     * Check if cache exists in storage
      * @param string $key
-     * @param string $hashKey
+     * @param string|null $hashKey
      *
      * @return bool If key exists in set, return TRUE, otherwise return FALSE.
      */
-    public function keyExists($key, $hashKey)
+    public function keyExists($key, $hashKey = null)
     {
         try {
             $key = $this->setPrefix($key);
 
-            return $this->redis->hExists($key, $hashKey);
+            if ($hashKey){
+                $cache = $this->redis->hExists($key, $hashKey);
+            } else {
+                $cache = $this->redis->exists($key);
+            }
+
+            return $cache;
         }
         catch(\Exception $e) {
             return false;
