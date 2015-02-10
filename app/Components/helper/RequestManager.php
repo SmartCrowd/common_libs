@@ -168,9 +168,10 @@ class RequestManager
         $user_agents = self::getUserAgentsList();
         if (count($user_agents)) {
             $agent = $user_agents[mt_rand(0, count($user_agents) - 1)];
+            curl_setopt($this->ch, CURLOPT_USERAGENT, $agent);
+            $this->options[CURLOPT_USERAGENT] = $agent;
         }
-        curl_setopt($this->ch, CURLOPT_USERAGENT, $agent);
-        $this->options[CURLOPT_USERAGENT] = $agent;
+
         return $this;
     }
 
