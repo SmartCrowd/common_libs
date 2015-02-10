@@ -63,8 +63,8 @@ class ClientResolver {
      * @param $host
      * @return string
      */
-    public static function getClientFromUrl($host){
-
+    public static function getClientFromUrl($host)
+    {
         $parts = explode('.', $host);
         if ( strstr($host, 'smart-crowd') )
             $clientName = array_shift($parts);
@@ -76,11 +76,28 @@ class ClientResolver {
     
     /**
      * Generate URL to Viewer_web client
+     * @example "basic.linza.expert" -> "http://basic.linza.social"
+     * @example "basic.grandviewer.ru" -> "basic.viewer.ru/api"
+     *
      * @param bool $toApi
      * @return string
      */
-    public function getViewerUrl($toApi = true){
-        return "http://" . str_replace('grandviewer', 'viewer', CDI()->config->client->url) . ($toApi ? "/api" : '');
+    public function getViewerUrl($toApi = true)
+    {
+        $domains = [
+            'grandviewer' => 'viewer',
+            'expert'      => 'social'
+        ];
+
+        $url = CDI()->config->client->url;
+        foreach($domains as $d_source => $d_target){
+            if (strstr($url, $d_source) !== false){
+                $url = str_replace($d_source, $d_target, $url);
+                break;
+            }
+        }
+
+        return $url = "http://" . $url . ($toApi ? "/api" : '');
     }
 
 } 
