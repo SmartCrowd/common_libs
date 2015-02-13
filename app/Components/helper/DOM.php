@@ -14,7 +14,6 @@ class DOM
      * parses page with DOMDocument
      * @param $url
      * @param bool $user_agents true if need to use random user_agents in request
-     * @param string $cookie
      * @return \DOMDocument
      */
     public static function getDOM($url, $user_agents = false, $cookie = null)
@@ -31,16 +30,21 @@ class DOM
             $response->setRandomUserAgent();
         }
         $response = $response->exec(true, true);
-        $response['result'] = mb_convert_encoding($response['result'], 'utf-8', mb_detect_encoding($response['result']));
+        $dom = self::makeDomFromHtml($response['result']);
+        return $dom;
+    }
+
+    public static function makeDomFromHtml($html)
+    {
+        $html = mb_convert_encoding($html, 'utf-8', mb_detect_encoding($html));
 
         libxml_use_internal_errors(true);
         $dom = new \DOMDocument();
-        $dom->loadHTML('<?xml version="1.0" encoding="UTF-8"?>' . $response['result']);
+        $dom->loadHTML('<?xml version="1.0" encoding="UTF-8"?>' . $html);
         $dom->substituteEntities = true;
 
         return $dom;
     }
-
 
     /**
      * @param $selector
