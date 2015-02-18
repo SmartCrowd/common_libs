@@ -41,6 +41,9 @@ class ClientResolver {
             $this->client = (string) $new_client;
     }
 
+    /**
+     * @return string
+     */
     public function getClient()
     {
         return $this->client;
