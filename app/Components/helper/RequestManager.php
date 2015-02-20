@@ -79,7 +79,7 @@ class RequestManager
         if (($proxies = CDI()->cache->getCache('proxyList', $lang)) !== false) {
             return $proxies;
         }
-        $proxies = self::loadFromFile(__DIR__.'/txt/'.$lang.'_proxy_list.txt');
+        $proxies = self::loadFromFile(__DIR__.'/data/'.$lang.'_proxy_list.txt');
         if (count($proxies))
             CDI()->cache->setCache('proxyList', $lang, $proxies);
         return $proxies;
@@ -185,7 +185,7 @@ class RequestManager
         if (($agents = CDI()->cache->getKey('userAgentsList')) !== false) {
             return Cache::unpack($agents);
         }
-        $agents = self::loadFromFile(__DIR__.'/txt/user_agent_list.txt');
+        $agents = self::loadFromFile(__DIR__.'/data/user_agent_list.txt');
         if (count($agents))
             CDI()->cache->setKey('userAgentsList', Cache::pack($agents));
         return $agents;
