@@ -155,4 +155,22 @@ abstract class Time {
         else return time()-24*60*60;
     }
 
+    /**
+     * get russian interpretation of month number or number of russian month
+     * @param $month
+     * @param bool $text
+     * @param bool $infinite
+     * @return mixed
+     */
+    public static function getRusMonth($month, $text = false, $infinite = true)
+    {
+        $month_array = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+        $month_array_inf = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+        if (!$text) {
+            return $infinite ? $month_array_inf[$month-1] : $month_array[$month-1];
+        } else {
+            return $infinite ? array_search($month, $month_array_inf)-1 : array_search($month, $month_array)-1;
+        }
+    }
+
 }
