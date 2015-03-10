@@ -41,12 +41,17 @@ class DOM
      * @param string $html
      * @param string $version
      * @param string $encoding
+     * @param bool   $convert_encoding
+     * @param string $encoding_from
      *
      * @return \DOMDocument
      */
-    public static function makeDomFromHtml($html, $version = "1.0", $encoding = "utf-8")
+    public static function makeDomFromHtml($html, $version = "1.0", $encoding = "utf-8", $convert_encoding = true, $encoding_from = "")
     {
-        $html = mb_convert_encoding($html, $encoding, mb_detect_encoding($html));
+        if ($convert_encoding) {
+            $encoding_from = !empty($encoding_from) ? $encoding_from : mb_detect_encoding($html);
+            $html = mb_convert_encoding($html, $encoding, $encoding_from);
+        }
         libxml_use_internal_errors(true);
         $dom = new \DOMDocument();
         $dom->loadHTML('<?xml version="'.$version.'" encoding="'.$encoding.'"?>' . $html);
