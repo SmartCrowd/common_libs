@@ -101,8 +101,8 @@ abstract class Time {
             $project = CDI()->mongo->selectCollection('projects')->findOne(['_id'=>$project_id]);
 
             $dayEnd = isset($project['inf_day_end']) ?
-                      getdate( strtotime($project['inf_day_end']) ) :
-                      getdate( strtotime(self::getInfoDayConfig(false)) );
+                getdate( strtotime($project['inf_day_end']) ) :
+                getdate( strtotime(self::getInfoDayConfig(false)) );
         } else {
             $dayEnd = getdate( strtotime(self::getInfoDayConfig(false)) );
         }
@@ -169,7 +169,7 @@ abstract class Time {
         if (!$text) {
             return $infinite ? $month_array_inf[$month-1] : $month_array[$month-1];
         } else {
-            return $infinite ? array_search($month, $month_array_inf)-1 : array_search($month, $month_array)-1;
+            return $infinite ? array_search($month, $month_array_inf)+1 : array_search($month, $month_array)+1;
         }
     }
 
