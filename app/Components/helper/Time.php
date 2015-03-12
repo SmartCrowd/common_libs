@@ -101,8 +101,8 @@ abstract class Time {
             $project = CDI()->mongo->selectCollection('projects')->findOne(['_id'=>$project_id]);
 
             $dayEnd = isset($project['inf_day_end']) ?
-                getdate( strtotime($project['inf_day_end']) ) :
-                getdate( strtotime(self::getInfoDayConfig(false)) );
+                      getdate( strtotime($project['inf_day_end']) ) :
+                      getdate( strtotime(self::getInfoDayConfig(false)) );
         } else {
             $dayEnd = getdate( strtotime(self::getInfoDayConfig(false)) );
         }
