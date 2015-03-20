@@ -26,7 +26,7 @@ class AssetsManager extends Manager {
         $files = self::getFilesFromDir($path, 'css', $recursive);
 
         foreach ($files as $file) {
-            $collection->addCss($file, true, $filter);
+            $collection->addCss($file, false, $filter);
         }
     }
 
@@ -34,7 +34,7 @@ class AssetsManager extends Manager {
         $files = self::getFilesFromDir($path, 'js', $recursive);
 
         foreach ($files as $file) {
-            $collection->addJs($file, true, $filter);
+            $collection->addJs($file, false, $filter);
         }
     }
 
