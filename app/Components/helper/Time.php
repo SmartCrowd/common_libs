@@ -169,7 +169,7 @@ abstract class Time {
         if (!$text) {
             return $infinite ? $month_array_inf[$month-1] : $month_array[$month-1];
         } else {
-            return $infinite ? array_search($month, $month_array_inf)-1 : array_search($month, $month_array)-1;
+            return $infinite ? array_search($month, $month_array_inf)+1 : array_search($month, $month_array)+1;
         }
     }
 
