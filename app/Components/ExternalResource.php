@@ -7,6 +7,7 @@ class ExternalResource
 
     public static function getResource($link, $rel2abs = true)
     {
+        $link = self::instagramHook($link);
         if (self::get_http_response_code($link) != "404") {
             $options = [
                 CURLOPT_RETURNTRANSFER => 1,
@@ -72,6 +73,26 @@ class ExternalResource
         $result      = in_array($host, $passthrough);
 
         return $result;
+    }
+
+    /**
+     * Redirect all instagram links to captioned embed url
+     *
+     * @param $link
+     *
+     * @return mixed
+     */
+    public static function instagramHook($link)
+    {
+        $instagram_hosts = ['instagram.com'];
+        $parsed_url = parse_url($link);
+        $host       = isset($parsed_url['host']) ? strtolower($parsed_url['host']) : "";
+        if (in_array($host, $instagram_hosts)) {
+            $link = preg_replace('/\/embed(\/captioned)?(\/)?$/i', '', $link);
+            $link = $link . "/embed/captioned";
+        }
+
+        return $link;
     }
 
 }
