@@ -50,8 +50,29 @@ class RedisCache {
     }
     public function getInstance(){
         $instance = null;
-            $instance = $this->redis;
-            return $instance;
+        $instance = $this->redis;
+        return $instance;
+    }
+
+    /**
+     * Return the number of keys in the currently-selected database.
+     * @return int
+     */
+    public function getSize(){
+        $this->redis->info();
+
+        return $this->redis->dbSize();
+    }
+
+    /**
+     * Get Redis server information
+     * For more information see @link http://redis.io/commands/info
+     *
+     * @param string $param
+     * @return array
+     */
+    public function getInfo($param = 'all'){
+        return $this->redis->info($param);
     }
 
 }
