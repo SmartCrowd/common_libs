@@ -140,15 +140,17 @@ class Media
                 $album['album'][] = $image;
             }
         }
-        foreach(array_pop($result_video) as $video){
+        foreach(array_pop($result_video) as $video) {
             $album['video'][] = str_replace('amp;','',$video);
         }
-        if (count($album['video']) > 0){
+        if (count($album['video']) > 0) {
             $album['main'] = '/img/frontend/Stamp_.jpg';
         }
-        elseif (count($album['album']) > 0 && count($album['video']) == 0){
+        elseif (count($album['album']) > 0 && count($album['video']) == 0) {
             $album['main'] = $album['album'][0];
         }
+        $album['album'] = array_unique($album['album']);
+        $album['video'] = array_unique($album['video']);
         return $album;
     }
 
