@@ -55,7 +55,7 @@ class CentrifugeHelper {
             "timestamp" => $timestamp,
             "url"       => trim(CDI()->config->centrifuge->host, "/") . "/connection",
             "user"      => $userToken,
-            "token"     => CDI()->centrifuge->buildSign($userToken . $timestamp)
+            "token"     => CDI()->centrifuge->generateToken($userToken, $timestamp)
         ];
         return $data;
     }
