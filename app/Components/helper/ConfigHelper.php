@@ -19,7 +19,7 @@ class ConfigHelper {
     }
 
     public static function getStageByHostname() {
-        $production_domains = ["ru"];
+        $production_domains = ["ru", "net", "com", "рф"];
         $domain = array_reverse(explode(".", gethostname()))[0];
         return in_array($domain, $production_domains) ? "production" : "development";
     }
