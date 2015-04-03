@@ -18,8 +18,8 @@ class ConfigHelper {
         return (CDI()->config->stage == "production") ? "production" : "default";
     }
 
-    public static function getStageByHostname() {
-        $production_domains = ["ru"];
+    public static function getStageByHostname(array $domains = []) {
+        $production_domains = empty($domains) ? ["ru", "net", "com", "рф"] : $domains;
         $domain = array_reverse(explode(".", gethostname()))[0];
         return in_array($domain, $production_domains) ? "production" : "development";
     }
