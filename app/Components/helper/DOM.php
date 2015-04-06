@@ -38,6 +38,7 @@ class DOM
     }
 
     /**
+     * Fixed libxml_use_internal_errors memory leak, solution from http://stackoverflow.com/a/10360052
      * @param string $html
      * @param string $version
      * @param string $encoding
@@ -52,7 +53,9 @@ class DOM
             $encoding_from = !empty($encoding_from) ? $encoding_from : mb_detect_encoding($html);
             $html = mb_convert_encoding($html, $encoding, $encoding_from);
         }
-        libxml_use_internal_errors(true);
+        if (libxml_use_internal_errors(true) === true) {
+            libxml_clear_errors();
+        }
         $dom = new \DOMDocument();
         $dom->loadHTML('<?xml version="'.$version.'" encoding="'.$encoding.'"?>' . $html);
         $dom->substituteEntities = true;
