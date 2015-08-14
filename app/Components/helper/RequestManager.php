@@ -8,6 +8,14 @@
 
 namespace helper;
 
+/**
+ * Class RequestManager
+ * @package helper
+ *
+ * Use proxy file names in format XX_proxy.list
+ * @example ru_proxy.list, eu_proxy_list
+ *
+ */
 class RequestManager
 {
     private $ch;
