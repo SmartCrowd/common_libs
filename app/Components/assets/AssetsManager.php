@@ -22,19 +22,19 @@ class AssetsManager extends Manager {
         return $collection;
     }
 
-    public function addCssDir(Collection &$collection, $path, $filter = false, $recursive = false) {
+    public function addCssDir(Collection &$collection, $path, $filter = false, $recursive = false, $local = false) {
         $files = self::getFilesFromDir($path, 'css', $recursive);
 
         foreach ($files as $file) {
-            $collection->addCss($file, false, $filter);
+            $collection->addCss($file, $local, $filter);
         }
     }
 
-    public static function addJsDir(Collection &$collection, $path, $filter = false, $recursive = false) {
+    public static function addJsDir(Collection &$collection, $path, $filter = false, $recursive = false, $local = false) {
         $files = self::getFilesFromDir($path, 'js', $recursive);
 
         foreach ($files as $file) {
-            $collection->addJs($file, false, $filter);
+            $collection->addJs($file, $local, $filter);
         }
     }
 
