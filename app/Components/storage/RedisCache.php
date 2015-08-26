@@ -22,7 +22,7 @@ class RedisCache {
     private $redis = null;
     private $cacheInstance = null;
 
-    public function __construct($host = '', $port = '', $lifetime = 3600)
+    public function __construct($host = '', $port = '', $lifetime = 3600, $options = [])
     {
         if (empty($host))     $host = self::DEFAULT_HOST;
         if (empty($port))     $port = self::DEFAULT_PORT;
@@ -30,6 +30,9 @@ class RedisCache {
 
         $this->redis = new \Redis();
         $this->redis->connect($host, $port);
+        foreach($options as $key => $value) {
+            $this->redis->setOption($key, $value);
+        }
 
         // test for server available
         $this->redis->ping();
