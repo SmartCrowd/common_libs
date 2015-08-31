@@ -87,9 +87,20 @@ class RequestManager
         if (($proxies = CDI()->cache->getCache('proxyList', $lang)) !== false) {
             return $proxies;
         }
-        $proxies = self::loadFromFile(__DIR__.'/data/'.$lang.'_proxy_list.txt');
+
+        $custom_proxy = CDI()->config->custom_proxy_list;
+
+        if (empty($custom_proxy)) {
+            $path_to_proxy = __DIR__.'/data/'.$lang.'_proxy_list.txt';
+        } else {
+            $path_to_proxy = $custom_proxy;
+        }
+
+        $proxies = self::loadFromFile($path_to_proxy);
+
         if (count($proxies))
             CDI()->cache->setCache('proxyList', $lang, $proxies);
+
         return $proxies;
     }
 
@@ -200,6 +211,3 @@ class RequestManager
     }
 
 }
-
-
-
