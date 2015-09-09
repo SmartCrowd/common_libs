@@ -88,12 +88,10 @@ class RequestManager
             return $proxies;
         }
 
-        $custom_proxy = CDI()->config->custom_proxy_list;
-
-        if (empty($custom_proxy)) {
+        if (empty(CDI()->config->custom_proxy_list)) {
             $path_to_proxy = __DIR__.'/data/'.$lang.'_proxy_list.txt';
         } else {
-            $path_to_proxy = $custom_proxy;
+            $path_to_proxy = CDI()->config->custom_proxy_list;
         }
 
         $proxies = self::loadFromFile($path_to_proxy);
