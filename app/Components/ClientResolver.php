@@ -88,8 +88,10 @@ class ClientResolver {
     public function getViewerUrl($toApi = true)
     {
         $domains = [
-            'grandviewer' => 'viewer',
-            'expert'      => 'social'
+            'grandviewer'           => 'viewer',
+            'expert'                => 'social',
+            'grandviewer-dev.dev'   => 'viewer-dev.dev',
+            'grandviewer-stage.dev' => 'viewer-stage.dev',
         ];
 
         $url = CDI()->config->client->url;
