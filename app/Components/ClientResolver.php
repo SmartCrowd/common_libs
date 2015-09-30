@@ -92,6 +92,7 @@ class ClientResolver {
             'expert'                => 'social',
             'grandviewer-dev.dev'   => 'viewer-dev.dev',
             'grandviewer-stage.dev' => 'viewer-stage.dev',
+            'grandviewer-ifnm.dev'  => 'viewer-ifnm.dev',
         ];
 
         $url = CDI()->config->client->url;
