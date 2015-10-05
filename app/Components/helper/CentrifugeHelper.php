@@ -18,9 +18,9 @@ class CentrifugeHelper {
      *
      * @return mixed
      */
-    public static function clientPublish($channel, $data = [])
+    public static function clientPublish($channel, $data = [], $separator = ":")
     {
-        $channel = CDI()->clientResolver->getClient() . ":" . $channel;
+        $channel = CDI()->clientResolver->getClient() . $separator . $channel;
         $result  = self::forcePublish($channel, $data);
 
         return $result;
