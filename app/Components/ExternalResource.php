@@ -67,9 +67,11 @@ class ExternalResource
      */
     public static function hostPassthrough($link)
     {
-        $passthrough = ['rutube.ru', 'echo.msk.ru', 'interfax.ru', 'www.interfax.ru'];
+        $passthrough = ['rutube.ru', 'echo.msk.ru', 'interfax.ru', 'kolokolrussia.ru', 'meduza.io', '24rus.ru', 'spbdnevnik.ru'];
         $parsed_url  = parse_url($link);
-        $host        = isset($parsed_url['host']) ? strtolower($parsed_url['host']) : "";
+        $host        = isset($parsed_url['host']) ? $parsed_url['host'] : "";
+        $host        = strtolower($host);
+        $host        = str_replace('www.', '', $host);
         $result      = in_array($host, $passthrough);
 
         return $result;
