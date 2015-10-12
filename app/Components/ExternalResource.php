@@ -4,23 +4,6 @@ use helper\RequestManager;
 
 class ExternalResource
 {
-    protected static $passthrough = [
-        'twitter.com',
-        'vk.com',
-        'facebook.com',
-        'fishki.net',
-        'youtube.com',
-        'instagram.com',
-        'lenta.ru',
-        'yaplakal.com',
-        'snob.ru',
-        'tjournal.ru',
-        'newstube.ru',
-        'vesti.ru',
-        'ntv.ru',
-        'govoritmoskva.ru',
-    ];
-
     public static function getResource($link, $rel2abs = true)
     {
         $link = self::instagramHook($link);
@@ -33,7 +16,7 @@ class ExternalResource
             ];
             $response = RequestManager::init($link)->setOptions($options)->exec(true, true);
             $errCode = isset($response['errno']) ? $response['errno'] : 1;
-            header('Content-type:' . $response['content_type']);
+
             if ($errCode !== 0) {
                 return "Не удалось загрузить страницу\n" . $link . ". Error: " . $errCode;
             }
@@ -41,6 +24,13 @@ class ExternalResource
             $host   = self::getHostFromUrl($link);
             $result = $rel2abs ? self::rel2abs($response['result'], $host) : $response['result'];
 
+            if (strpos($response['content_type'], 'charset')) {
+                header('Content-type:' . $response['content_type']);
+            } else {
+                if(preg_match("/<meta[^>]+charset=[']?(.*?)[']?[\/\s>]/i", $result, $matches)) {
+                    header('Content-type:' . $response['content_type'] . '; charset=' . $matches[1]);
+                }
+            }
             return $result;
         } else {
             return "Ссылка недоступна " . $link;
@@ -72,24 +62,6 @@ class ExternalResource
     {
         $headers = get_headers($url);
         return substr($headers[0], 9, 3);
-    }
-
-    /**
-     * Returns true if host accepts redirects through iframe
-     *
-     * @param $link
-     *
-     * @return bool
-     */
-    public static function hostPassthrough($link)
-    {
-        $parsed_url  = parse_url($link);
-        $host        = isset($parsed_url['host']) ? $parsed_url['host'] : "";
-        $host        = strtolower($host);
-        $host        = str_replace('www.', '', $host);
-        $result      = in_array($host, self::$passthrough);
-
-        return $result;
     }
 
     /**
