@@ -4,6 +4,22 @@ use helper\RequestManager;
 
 class ExternalResource
 {
+    protected static $passthrough = [
+        'twitter.com',
+        'vk.com',
+        'facebook.com',
+        'fishki.net',
+        'youtube.com',
+        'instagram.com',
+        'lenta.ru',
+        'yaplakal.com',
+        'snob.ru',
+        'tjournal.ru',
+        'newstube.ru',
+        'vesti.ru',
+        'ntv.ru',
+        'govoritmoskva.ru',
+    ];
 
     public static function getResource($link, $rel2abs = true)
     {
@@ -67,12 +83,11 @@ class ExternalResource
      */
     public static function hostPassthrough($link)
     {
-        $passthrough = ['rutube.ru', 'echo.msk.ru', 'interfax.ru', 'kolokolrussia.ru', 'meduza.io', '24rus.ru', 'spbdnevnik.ru'];
         $parsed_url  = parse_url($link);
         $host        = isset($parsed_url['host']) ? $parsed_url['host'] : "";
         $host        = strtolower($host);
         $host        = str_replace('www.', '', $host);
-        $result      = in_array($host, $passthrough);
+        $result      = in_array($host, self::$passthrough);
 
         return $result;
     }
