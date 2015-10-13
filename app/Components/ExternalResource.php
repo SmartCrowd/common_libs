@@ -38,7 +38,7 @@ class ExternalResource
     }
 
     /**
-     * Конвертирует относительные ссылки документа в абсолютные
+     *  Задание базового URL для относительных URL
      *
      * @param $file
      * @param $host
@@ -46,8 +46,10 @@ class ExternalResource
      */
     protected static function rel2abs($file, $host)
     {
-        $pattern = '#(<\s*((img)|(a)|(link))\s+[^>]*((src)|(href))\s*=\s*[\"\'])(?!\/\/)(?!http)([^\"\'>]+)([\"\'>]+)#';
-        $file = preg_replace($pattern, '$1'.$host.'$9$10', $file);
+        if (!preg_match('/(<base[^>]* href="(.*)">)/', $file)) {
+            $file = preg_replace('/(<head[^>]*>)/', '$1<base href="'.$host.'" />', $file);
+        }
+
         return $file;
     }
 
