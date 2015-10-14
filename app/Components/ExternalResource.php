@@ -4,7 +4,6 @@ use helper\RequestManager;
 
 class ExternalResource
 {
-
     public static function getResource($link, $rel2abs = true)
     {
         $link = self::instagramHook($link);
@@ -17,7 +16,7 @@ class ExternalResource
             ];
             $response = RequestManager::init($link)->setOptions($options)->exec(true, true);
             $errCode = isset($response['errno']) ? $response['errno'] : 1;
-            header('Content-type:' . $response['content_type']);
+
             if ($errCode !== 0) {
                 return "Не удалось загрузить страницу\n" . $link . ". Error: " . $errCode;
             }
@@ -25,6 +24,13 @@ class ExternalResource
             $host   = self::getHostFromUrl($link);
             $result = $rel2abs ? self::rel2abs($response['result'], $host) : $response['result'];
 
+            if (strpos($response['content_type'], 'charset')) {
+                header('Content-type:' . $response['content_type']);
+            } else {
+                if(preg_match("/<meta[^>]+charset=[']?(.*?)[']?[\/\s>]/i", $result, $matches)) {
+                    header('Content-type:' . $response['content_type'] . '; charset=' . $matches[1]);
+                }
+            }
             return $result;
         } else {
             return "Ссылка недоступна " . $link;
@@ -32,7 +38,7 @@ class ExternalResource
     }
 
     /**
-     * Конвертирует относительные ссылки документа в абсолютные
+     *  Задание базового URL для относительных URL
      *
      * @param $file
      * @param $host
@@ -40,8 +46,10 @@ class ExternalResource
      */
     protected static function rel2abs($file, $host)
     {
-        $pattern = '#(<\s*((img)|(a)|(link))\s+[^>]*((src)|(href))\s*=\s*[\"\'])(?!\/\/)(?!http)([^\"\'>]+)([\"\'>]+)#';
-        $file = preg_replace($pattern, '$1'.$host.'$9$10', $file);
+        if (!preg_match('/(<base[^>]* href="(.*)">)/', $file)) {
+            $file = preg_replace('/(<head[^>]*>)/', '$1<base href="'.$host.'" />', $file);
+        }
+
         return $file;
     }
 
@@ -56,25 +64,6 @@ class ExternalResource
     {
         $headers = get_headers($url);
         return substr($headers[0], 9, 3);
-    }
-
-    /**
-     * Returns true if host accepts redirects through iframe
-     *
-     * @param $link
-     *
-     * @return bool
-     */
-    public static function hostPassthrough($link)
-    {
-        $passthrough = ['rutube.ru', 'echo.msk.ru', 'interfax.ru', 'kolokolrussia.ru', 'meduza.io', '24rus.ru', 'spbdnevnik.ru'];
-        $parsed_url  = parse_url($link);
-        $host        = isset($parsed_url['host']) ? $parsed_url['host'] : "";
-        $host        = strtolower($host);
-        $host        = str_replace('www.', '', $host);
-        $result      = in_array($host, $passthrough);
-
-        return $result;
     }
 
     /**
