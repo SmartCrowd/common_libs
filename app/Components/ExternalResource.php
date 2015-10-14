@@ -4,6 +4,7 @@ use helper\RequestManager;
 
 class ExternalResource
 {
+
     public static function getResource($link, $rel2abs = true)
     {
         $link = self::instagramHook($link);
@@ -15,14 +16,14 @@ class ExternalResource
                 CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
             ];
             $response = RequestManager::init($link)->setOptions($options)->exec(true, true);
+
             $errCode = isset($response['errno']) ? $response['errno'] : 1;
 
             if ($errCode !== 0) {
                 return "Не удалось загрузить страницу\n" . $link . ". Error: " . $errCode;
             }
 
-            $host   = self::getHostFromUrl($link);
-            $result = $rel2abs ? self::rel2abs($response['result'], $host) : $response['result'];
+            $result = $rel2abs ? self::rel2abs($response['result'], $link) : $response['result'];
 
             if (strpos($response['content_type'], 'charset')) {
                 header('Content-type:' . $response['content_type']);
@@ -31,6 +32,7 @@ class ExternalResource
                     header('Content-type:' . $response['content_type'] . '; charset=' . $matches[1]);
                 }
             }
+
             return $result;
         } else {
             return "Ссылка недоступна " . $link;
@@ -41,22 +43,26 @@ class ExternalResource
      *  Задание базового URL для относительных URL
      *
      * @param $file
-     * @param $host
+     * @param $url
      * @return mixed
      */
-    protected static function rel2abs($file, $host)
+    protected static function rel2abs($file, $url)
     {
+        $pattern = '#(<\s*((img)|(a)|(link))\s+[^>]*((src)|(href))\s*=\s*[\"\'])(?!\/\/)(?!http)([^\"\'>]+)([\"\'>]+)#';
+        $file = preg_replace($pattern, '$1'.self::getHostFromUrl($url).'$9$10', $file);
+
         if (!preg_match('/(<base[^>]* href="(.*)">)/', $file)) {
-            $file = preg_replace('/(<head[^>]*>)/', '$1<base href="'.$host.'" />', $file);
+            $file = preg_replace('/(<head[^>]*>)/', '$1<base href="'.self::getHostFromUrl($url, false).'" />', $file);
         }
 
         return $file;
     }
 
-    protected static function getHostFromUrl($url)
+    protected static function getHostFromUrl($url, $full = true)
     {
         $host = parse_url($url);
-        $host = $host['scheme'] . "://" . $host['host'];
+        $host = $full ? $host['scheme'] . "://" . $host['host'] : $host['host'];
+
         return $host;
     }
 
