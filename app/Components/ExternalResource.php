@@ -52,15 +52,10 @@ class ExternalResource
     {
         $full_domain = self::getHostFromUrl($url);
 
-        if (in_array($full_domain, self::$base_href_exception_domains)) {
-            $pattern = '#(<\s*((img)|(a)|(link))\s+[^>]*((src)|(href))\s*=\s*[\"\'])(?!\/\/)(?!http)([^\"\'>]+)([\"\'>]+)#';
-            $file = preg_replace($pattern, '$1'.$full_domain.'$9$10', $file);
+        $pattern = '#(<\s*((img)|(a)|(link))\s+[^>]*((src)|(href))\s*=\s*[\"\'])(?!\/\/)(?!http)([^\"\'>]+)([\"\'>]+)#';
+        $file = preg_replace($pattern, '$1'.$full_domain.'$9$10', $file);
 
-            return $file;
-        }
-
-
-        if (!preg_match('/(<base[^>]* href="(.*)">)/', $file)) {
+        if (!in_array($full_domain, self::$base_href_exception_domains) && !preg_match('/(<base[^>]* href="(.*)">)/', $file)) {
             $file = preg_replace('/(<head[^>]*>)/', '$1<base href="'.$full_domain.'"/>', $file);
         }
 
