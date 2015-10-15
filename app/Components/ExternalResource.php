@@ -5,6 +5,8 @@ use helper\RequestManager;
 class ExternalResource
 {
 
+    private static $base_href_exception_domains = ['https://vk.com'];
+
     public static function getResource($link, $rel2abs = true)
     {
         $link = self::instagramHook($link);
@@ -48,11 +50,13 @@ class ExternalResource
      */
     protected static function rel2abs($file, $url)
     {
-        $pattern = '#(<\s*((img)|(a)|(link))\s+[^>]*((src)|(href))\s*=\s*[\"\'])(?!\/\/)(?!http)([^\"\'>]+)([\"\'>]+)#';
-        $file = preg_replace($pattern, '$1'.self::getHostFromUrl($url).'$9$10', $file);
+        $full_domain = self::getHostFromUrl($url);
 
-        if (!preg_match('/(<base[^>]* href="(.*)">)/', $file)) {
-            $file = preg_replace('/(<head[^>]*>)/', '$1<base href="'.self::getHostFromUrl($url, false).'" />', $file);
+        $pattern = '#(<\s*((img)|(a)|(link))\s+[^>]*((src)|(href))\s*=\s*[\"\'])(?!\/\/)(?!http)([^\"\'>]+)([\"\'>]+)#';
+        $file = preg_replace($pattern, '$1'.$full_domain.'$9$10', $file);
+
+        if (!in_array($full_domain, self::$base_href_exception_domains) && !preg_match('/(<base[^>]* href="(.*)">)/', $file)) {
+            $file = preg_replace('/(<head[^>]*>)/', '$1<base href="'.$full_domain.'"/>', $file);
         }
 
         return $file;
