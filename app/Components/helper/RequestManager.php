@@ -7,6 +7,7 @@
  */
 
 namespace helper;
+use Etechnika\IdnaConvert\IdnaConvert;
 
 /**
  * Class RequestManager
@@ -153,12 +154,9 @@ class RequestManager
      */
     public static function encodeUrl($link)
     {
-        if (!class_exists('\idna_convert'))
-            include_once("idna_convert.class.php");
-
-        $converter = new \idna_convert();
         $domain = parse_url($link, PHP_URL_HOST);
-        return str_replace($domain, $converter->encode($domain), $link);
+        $encoded_domain = IdnaConvert::encodeString($domain);
+        return str_replace($domain, $encoded_domain, $link);
     }
 
     /**
