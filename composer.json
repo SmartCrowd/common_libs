@@ -8,7 +8,8 @@
     "require": {
         "php": ">=5.5",
         "ext-curl" : "*",
-        "ext-json" : "*"
+        "ext-json" : "*",
+        "etechnika/idna-convert": "1.0.*"
     },
     "autoload": {
         "files": ["app/autoload_libs.php"]
